@@ -3,245 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>DONKEY MISSION - INFINITE EDITION</title>
+    <title>DONKEY MISSION - SMOOTH EDITION</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫏</text></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     
     <style>
         :root { 
             --neon: #00f2ff; --green: #00ff88; --red: #ff3131; 
-            --gold: #FFD700; --silver: #C0C0C0; --bronze: #CD7F32; 
-            --cat: #bc13fe; --rabbit: #ff8c00; --fox: #ff4500; --panda: #ffffff;
-            --unicorn: #ff00ff;
-            --rad: #adff2f;
-            --glass: rgba(255, 255, 255, 0.08);
+            --gold: #FFD700; 
         }
         
-        * { 
-            margin: 0; padding: 0; box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; outline: none; 
-            user-select: none; -webkit-user-select: none; 
-        }
-        
-        input[type="text"] { user-select: auto; -webkit-user-select: auto; transition: 0.3s; }
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
 
         html, body {
-            overscroll-behavior: none;
             width: 100vw; height: 100dvh; overflow: hidden; 
-        }
-
-        body { 
             background: #111; font-family: 'Orbitron', sans-serif; color: #fff; 
             display: flex; justify-content: center; align-items: center; 
         }
 
-        /* --- NEUER HINTERGRUND AUFBAU --- */
+        #phone-container { 
+            position: relative; width: 100%; max-width: 420px; height: 100%; 
+            background: #000; overflow: hidden; z-index: 10; 
+        }
+
+        @media (min-width: 450px) {
+            #phone-container { height: 90vh; max-height: 850px; border-radius: 35px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 15px 40px rgba(0,0,0,0.8); }
+        }
+
+        /* --- DER 3D HINTERGRUND TRICK --- */
         #bg-top { 
-            position: absolute; 
-            top: 0; left: 0; right: 0; 
-            height: 40%; 
-            background-image: url('hintergrund_top.png'); 
-            background-size: cover; 
-            background-position: bottom center; 
+            position: absolute; top: 0; left: 0; right: 0; height: 45%; 
+            /* Ein schöner Sonnenuntergangs-Himmel */
+            background: linear-gradient(to bottom, #0a0026, #4b104b 50%, #ff4d00); 
             z-index: 1; 
+        }
+
+        #floor-container {
+            position: absolute; top: 45%; left: 0; right: 0; bottom: 0;
+            /* Hier entsteht die 3D Tiefe */
+            perspective: 300px; 
+            overflow: hidden;
+            z-index: 1;
         }
 
         #bg-bottom { 
-            position: absolute; 
-            top: 40%; left: 0; right: 0; bottom: 0; 
-            background-image: url('hintergrund_bottom.png'); 
-            background-size: 100% auto; 
-            background-repeat: repeat-y; 
-            z-index: 1; 
+            position: absolute; top: 0; left: -50%; width: 200%; height: 200%; 
+            /* Die Wiese und der Weg (wird per CSS gezeichnet) */
+            background-color: #2b4a15; 
+            background-image: 
+                /* Die braunen Fahrspuren in der Mitte */
+                linear-gradient(to right, transparent 40%, rgba(101, 67, 33, 1) 40%, rgba(101, 67, 33, 1) 45%, transparent 45%, transparent 55%, rgba(101, 67, 33, 1) 55%, rgba(101, 67, 33, 1) 60%, transparent 60%),
+                /* Waagerechte Linien, damit man die Geschwindigkeit spürt */
+                repeating-linear-gradient(to bottom, transparent, transparent 96px, rgba(0,0,0,0.3) 96px, rgba(0,0,0,0.3) 100px);
+            
+            /* Dies kippt den geraden Weg nach hinten zum Horizont! */
+            transform-origin: top center;
+            transform: rotateX(75deg); 
         }
 
-        #bg-overlay { position: absolute; inset: 0; background: radial-gradient(circle, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.4) 100%); z-index: 2; }
+        #bg-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%); z-index: 2; pointer-events: none;}
 
-        #phone-container { position: relative; width: 100%; max-width: 420px; height: 100%; background: transparent; z-index: 10; overflow: hidden; transition: border-color 0.3s, box-shadow 0.3s; }
-
-        @media (min-width: 450px) {
-            #phone-container { height: 90vh; max-height: 850px; border-radius: 35px; }
-            #phone-container.is-playing { border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 15px 40px rgba(0,0,0,0.8); }
-            #bg-overlay { background: radial-gradient(circle, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.8) 100%); }
-        }
-
-        #game-wrap { position: absolute; inset: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.1); touch-action: none; overflow: hidden; visibility: hidden; pointer-events: none; z-index: 20; }
-        #canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 50; touch-action: none; }
-
-        #hud { position: absolute; top: env(safe-area-inset-top, 10px); width: 100%; z-index: 200; pointer-events: none; padding-top: 10px; }
+        #game-wrap { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 20; }
         
-        #mission-title { text-align: center; font-size: 28px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; color: var(--neon); text-shadow: 0 0 10px var(--neon), 0 0 20px var(--neon); animation: pulseNeon 1.5s infinite alternate; }
-        @keyframes pulseNeon { 0% { opacity: 0.7; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1.02); } }
+        #hud { position: absolute; top: 10px; width: 100%; z-index: 200; padding: 10px; pointer-events: none; }
+        #mission-title { text-align: center; font-size: 24px; font-weight: 900; color: var(--neon); text-shadow: 0 0 10px var(--neon); margin-bottom: 10px; }
+        #stats-bar { display: flex; justify-content: space-between; background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 15px; border: 1px solid var(--neon); }
+        .stat { font-weight: 900; font-size: 16px; }
 
-        #energy-box { width: 85%; height: 22px; margin: 0 auto 10px; background: rgba(0,0,0,0.8); border-radius: 12px; border: 2px solid #fff; overflow: hidden; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
-        #energy-fill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--red), var(--gold), var(--green)); transition: width 0.2s linear; }
-        
-        #stats-bar { display: flex; justify-content: space-between; align-items: center; width: 90%; margin: 0 auto; background: rgba(255,255,255,0.15); padding: 8px 15px; border-radius: 15px; border: 1px solid var(--neon); backdrop-filter: blur(10px); }
-        .stat { font-weight: 900; font-size: 16px; text-shadow: 1px 1px 3px #000; font-variant-numeric: tabular-nums; }
+        canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 50; }
 
-        #controls { position: absolute; bottom: env(safe-area-inset-bottom, 15px); left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 10px; z-index: 300; pointer-events: none; }
-        .arrow { width: 120px; height: 120px; background: transparent; border: none; color: rgba(255, 255, 255, 0.5); font-size: 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.15s; pointer-events: auto; text-shadow: 0 0 10px rgba(0, 242, 255, 0.3); touch-action: none; }
-        .arrow.glow { color: var(--neon); transform: scale(0.95); text-shadow: 0 0 30px var(--neon), 0 0 50px var(--neon); }
+        #controls { position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; z-index: 300; }
+        .arrow { width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%; color: #fff; font-size: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid rgba(255,255,255,0.3); }
+        .arrow:active { background: var(--neon); color: #000; transform: scale(0.9); }
 
-        #lvl-up-popup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255, 215, 0, 0.5); color: #fff; padding: 15px 30px; border-radius: 25px; font-family: 'Orbitron'; font-size: 28px; font-weight: 900; box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); text-shadow: 2px 2px 5px #000, 0 0 15px var(--gold); z-index: 500; opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; text-align: center; }
-        #lvl-up-popup.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-
-        #game-over-overlay {
-            position: absolute; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.8s ease-in-out;
-        }
-        #game-over-overlay.show { opacity: 1; pointer-events: auto; }
-        .go-title {
-            font-size: 50px; color: var(--red); text-shadow: 0 0 20px var(--red), 0 0 40px var(--red);
-            font-weight: 900; letter-spacing: 5px; transform: scale(0.5); opacity: 0;
-            transition: transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.8s ease;
-            text-align: center; font-family: 'Orbitron', sans-serif;
-        }
-        #game-over-overlay.show .go-title { transform: scale(1); opacity: 1; }
-
-        .screen { 
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100; 
-            overflow-y: auto; -webkit-overflow-scrolling: touch; pointer-events: auto; padding-bottom: 50px;
-            overscroll-behavior: none;
-            background: transparent; 
-        }
-
-        .screen-inner { 
-            width: 100%; min-height: 100dvh; margin: 0 auto; max-width: 420px; 
-            display: flex; flex-direction: column; justify-content: flex-start; align-items: center; 
-            padding: 40px 10px 100px 10px; 
-        }
-
-        .start-glass-panel {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.08); 
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-radius: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 35px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-            margin-bottom: 20px;
-        }
-
-        .btn-main { padding: 15px; border-radius: 15px; border: none; background: var(--green); color: #000; font-weight: 900; font-family: 'Orbitron'; font-size: 18px; width: 100%; cursor: pointer; box-shadow: 0 6px 0 #00b362, 0 10px 20px rgba(0,255,136,0.3); transition: 0.1s; transform: translateY(0); }
-        .btn-main:active { transform: translateY(6px); box-shadow: 0 0px 0 #00b362, 0 2px 5px rgba(0,255,136,0.4); }
-
-        .name-input { width: 100%; padding: 15px; border-radius: 15px; border: 1px solid var(--neon); background: rgba(0,0,0,0.7); color: #fff; text-align: center; font-family: 'Orbitron'; font-size: 20px; text-shadow: 1px 1px 5px #000; outline: none; }
-        .btn-char { padding: 12px 2px; border-radius: 15px; border: 2px solid var(--neon); background: rgba(0,0,0,0.4); color: #fff; cursor: pointer; font-family: 'Orbitron'; font-size: 12px; font-weight: bold; transition: 0.1s; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 0 var(--neon), 0 5px 10px rgba(0,0,0,0.2); transform: translateY(0); flex-shrink: 0; }
-        .btn-char span { font-size: 36px; margin-bottom: 5px; }
+        .screen { position: absolute; inset: 0; z-index: 400; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;}
+        .btn-main { padding: 15px 30px; background: var(--green); border: none; border-radius: 10px; font-family: 'Orbitron'; font-weight: 900; font-size: 20px; cursor: pointer; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-<div id="bg-top"></div>
-<div id="bg-bottom"></div>
-<div id="bg-overlay"></div>
-
-<div id="game-over-overlay">
-    <div class="go-title">MISSION GESCHEITERT</div>
-</div>
-
 <div id="phone-container">
-    
-    <div id="game-wrap">
+    <div id="bg-top"></div>
+    <div id="floor-container">
+        <div id="bg-bottom"></div>
+    </div>
+    <div id="bg-overlay"></div>
+
+    <div id="game-wrap" style="visibility: hidden;">
         <div id="hud">
             <div id="mission-title">DONKEY MISSION</div>
-            <div id="energy-box"><div id="energy-fill"></div></div>
             <div id="stats-bar">
-                <div class="stat" style="background:var(--neon); color:#000; padding:2px 8px; border-radius:5px; font-weight:900; font-size:16px; text-shadow:none;">LVL <span id="lvl-txt">1</span></div>
-                <div id="hp-txt" class="stat">❤️❤️❤️</div>
+                <div class="stat" style="color:var(--neon)">LVL <span id="lvl-txt">1</span></div>
                 <div id="score-txt" class="stat" style="color:var(--gold)">0 PTS</div>
-                <div id="time-txt" class="stat" style="color:var(--neon)">30s</div>
             </div>
         </div>
-
+        
         <canvas id="canvas"></canvas>
 
-        <div id="lvl-up-popup">NÄCHSTES LEVEL!</div>
-
         <div id="controls">
-            <div id="btn-left" class="arrow" onmousedown="triggerMove(-1, 'btn-left')" ontouchstart="event.preventDefault(); triggerMove(-1, 'btn-left')">◀</div>
-            <div id="btn-right" class="arrow" onmousedown="triggerMove(1, 'btn-right')" ontouchstart="event.preventDefault(); triggerMove(1, 'btn-right')">▶</div>
+            <div class="arrow" onmousedown="move(-1)" ontouchstart="event.preventDefault(); move(-1)">◀</div>
+            <div class="arrow" onmousedown="move(1)" ontouchstart="event.preventDefault(); move(1)">▶</div>
         </div>
     </div>
 
     <div id="scr-start" class="screen">
-        <div class="screen-inner">
-            <div class="start-glass-panel">
-                <h1 style="color:var(--gold); margin-bottom:20px;">DONKEY MISSION</h1>
-                <input type="text" id="pName" class="name-input" placeholder="CODENAME EINGEBEN" maxlength="12">
-                <div style="display:flex; gap:10px; margin-top:20px; width:100%;">
-                    <button class="btn-char" style="flex:1;" onclick="start('dog', 1)"><span>🫏</span>START</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="scr-end" class="screen" style="display:none">
-        <div class="screen-inner"> 
-            <div class="start-glass-panel">
-                <h1 id="end-agent-name">SPIELER</h1>
-                <h1 id="f-score">0 PTS</h1> 
-                <button class="btn-main" onclick="goToLevelSelect()">NEUSTART</button> 
-            </div>
-        </div>
+        <h1 style="color:var(--gold); font-size: 30px; margin-bottom: 20px;">DONKEY MISSION</h1>
+        <button class="btn-main" onclick="startGame()">SPIEL STARTEN</button>
     </div>
 </div>
 
 <script>
-// --- SPIEL LOGIK ---
 let active = false;
-let mode = 'dog';
-let agent = "UNKNOWN";
-let score = 0, hp = 3, energy = 100, level = 1, timeLeft = 30;
+let score = 0, level = 1;
 let lastT = 0;
-let bgScrollY = 0; // Für den unendlichen Weg
+let bgScrollY = 0; 
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-const W = 400, H = 700;
-canvas.width = W; canvas.height = H;
+let W = canvas.width = 420;
+let H = canvas.height = 800;
 
-const lanes = [40, 120, 200, 280, 360];
-let currLane = 2, playerX = lanes[2], targetX = lanes[2];
+const lanes = [W*0.2, W*0.5, W*0.8]; // Links, Mitte, Rechts
+let currLane = 1, playerX = lanes[1], targetX = lanes[1];
 
-function start(m, startLvl) {
-    let nameInput = document.getElementById("pName");
-    agent = nameInput.value.trim().toUpperCase() || "AGENT";
-    
+function startGame() {
     active = true;
-    level = startLvl;
-    hp = 3; score = 0; energy = 100; timeLeft = 30;
-    
     document.getElementById("scr-start").style.display = "none";
     document.getElementById("game-wrap").style.visibility = "visible";
-    document.getElementById("game-wrap").style.pointerEvents = "auto";
-    
     requestAnimationFrame(loop);
 }
 
-function triggerMove(dir, btnId) {
-    currLane = Math.max(0, Math.min(4, currLane + dir));
+function move(dir) {
+    currLane = Math.max(0, Math.min(2, currLane + dir));
     targetX = lanes[currLane];
-    let btn = document.getElementById(btnId);
-    if(btn) { btn.classList.add("glow"); setTimeout(() => btn.classList.remove("glow"), 150); }
-}
-
-function goToLevelSelect() {
-    location.reload();
-}
-
-function showEndScreen() {
-    active = false;
-    document.getElementById("game-wrap").style.visibility = "hidden";
-    document.getElementById("scr-end").style.display = "flex";
-    document.getElementById("end-agent-name").innerText = agent;
-    document.getElementById("f-score").innerText = Math.floor(score) + " PTS";
 }
 
 function loop(t) {
@@ -250,37 +144,36 @@ function loop(t) {
     lastT = t;
     if(dt > 0.1) dt = 0.016;
 
-    // --- HINTERGRUND ANIMATION ---
-    let ptsScaling = 1 + (level - 1) * (1.2 / 11);
-    let speedMult = ptsScaling;
+    // --- DIE MAGIE: Der 3D Weg scrollt endlos ---
+    let speedMult = 1 + (level * 0.1);
     
-    bgScrollY += (180 * speedMult) * dt;
+    // Wir verschieben die Textur auf dem Boden nach unten
+    bgScrollY += (400 * speedMult) * dt; 
+    
+    // Die Position des Hintergrundbildes im 3D-Container aktualisieren
+    document.getElementById("bg-bottom").style.backgroundPosition = `0px ${bgScrollY}px`;
+
+    // Parallax Effekt für die Kurvenlage (optional)
     let playerOffsetX = ((W / 2) - playerX);
+    document.getElementById("bg-bottom").style.transform = `rotateX(75deg) rotateZ(${playerOffsetX * 0.02}deg)`;
 
-    document.getElementById("bg-top").style.backgroundPosition = `calc(50% + ${playerOffsetX * 0.01}px) bottom`;
-    document.getElementById("bg-bottom").style.backgroundPosition = `calc(50% + ${playerOffsetX * 0.03}px) ${bgScrollY}px`;
-
-    // --- SPIEL UPDATES ---
-    timeLeft -= dt;
-    energy -= 4 * dt;
-    if(timeLeft <= 0) { level++; timeLeft = 30; energy = 100; }
-    if(energy <= 0) { hp--; energy = 100; }
-    if(hp <= 0) { showEndScreen(); return; }
-
-    // HUD Update
-    document.getElementById("lvl-txt").innerText = level;
-    document.getElementById("hp-txt").innerText = "❤️".repeat(hp);
-    document.getElementById("score-txt").innerText = Math.floor(score) + " PTS";
-    document.getElementById("time-txt").innerText = Math.ceil(timeLeft) + "s";
-    document.getElementById("energy-fill").style.width = energy + "%";
-
-    // Zeichnen
-    ctx.clearRect(0, 0, W, H);
-    playerX += (targetX - playerX) * 0.15;
+    // Updates
+    score += 10 * dt;
+    if(score > level * 200) level++;
     
-    ctx.font = "70px Arial";
+    document.getElementById("score-txt").innerText = Math.floor(score) + " PTS";
+    document.getElementById("lvl-txt").innerText = level;
+
+    // Esel zeichnen
+    ctx.clearRect(0, 0, W, H);
+    playerX += (targetX - playerX) * 0.15; // Weiche Seitwärtsbewegung
+    
+    ctx.font = "80px Arial";
     ctx.textAlign = "center";
-    ctx.fillText("🫏", playerX, H - 80);
+    
+    // Eine kleine Wipp-Animation für den Esel beim Laufen
+    let bounce = Math.abs(Math.sin(t * 0.01)) * 10;
+    ctx.fillText("🫏", playerX, H - 120 - bounce);
 
     requestAnimationFrame(loop);
 }
