@@ -1,1 +1,458 @@
 
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>DONKEY RUN & REMEMBER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --earth: #8B4513; --grass: #2E8B57; --sky: #87CEEB;
+            --accent: #FFD700; --danger: #FF4500;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-touch-callout: none; }
+        
+        body { 
+            background: #111; font-family: 'Nunito', sans-serif; color: #fff; 
+            display: flex; justify-content: center; align-items: center; 
+            width: 100vw; height: 100dvh; overflow: hidden; overscroll-behavior: none;
+        }
+
+        #game-container {
+            position: relative; width: 100%; max-width: 450px; height: 100%; max-height: 850px;
+            background: linear-gradient(to bottom, var(--sky) 0%, #d2b48c 40%, #a0522d 100%);
+            overflow: hidden; box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        @media (min-width: 450px) { #game-container { height: 90vh; border-radius: 20px; } }
+
+        canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 10; }
+
+        .ui-layer { position: absolute; inset: 0; z-index: 20; pointer-events: none; display: flex; flex-direction: column; }
+        
+        #hud { padding: 15px; display: flex; justify-content: space-between; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); }
+        .stat { font-family: 'Fredoka One', cursive; font-size: 20px; text-shadow: 2px 2px 0 #000; }
+        .stat-score { color: var(--accent); }
+
+        #controls { position: absolute; bottom: 15px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; pointer-events: auto; }
+        .btn-move { 
+            width: 80px; height: 80px; background: rgba(255,255,255,0.2); border: 3px solid rgba(255,255,255,0.5); 
+            border-radius: 50%; color: #fff; font-size: 40px; display: flex; align-items: center; justify-content: center; 
+            backdrop-filter: blur(5px); transition: 0.1s; cursor: pointer; touch-action: none;
+        }
+        .btn-move:active, .btn-move.active { background: rgba(255,255,255,0.6); transform: scale(0.9); }
+
+        /* Screens */
+        .screen { position: absolute; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; text-align: center; padding: 20px; }
+        h1 { font-family: 'Fredoka One', cursive; font-size: 40px; color: var(--accent); margin-bottom: 20px; text-shadow: 0 5px 10px rgba(0,0,0,0.5); }
+        p { font-size: 18px; margin-bottom: 20px; line-height: 1.5; }
+        
+        .btn { 
+            background: var(--grass); border: none; border-bottom: 5px solid #194d30; padding: 15px 30px; 
+            border-radius: 15px; color: #fff; font-size: 24px; font-family: 'Fredoka One', cursive; 
+            cursor: pointer; transition: 0.1s; margin-top: 10px; width: 100%; max-width: 300px;
+        }
+        .btn:active { transform: translateY(5px); border-bottom-width: 0; margin-bottom: 5px; }
+
+        /* Quiz Overlay */
+        #quiz-screen { background: rgba(20, 10, 0, 0.95); display: none; }
+        .quiz-option { 
+            background: #442211; border: 2px solid var(--accent); border-radius: 10px; 
+            padding: 15px; margin: 10px 0; font-size: 28px; width: 100%; max-width: 350px; 
+            cursor: pointer; transition: 0.2s; letter-spacing: 5px;
+        }
+        .quiz-option:active { background: var(--accent); color: #000; }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="ui-layer" id="game-ui" style="display: none;">
+        <div id="hud">
+            <div class="stat">LVL <span id="ui-lvl">1</span></div>
+            <div class="stat">❤️ <span id="ui-hp">3</span></div>
+            <div class="stat stat-score"><span id="ui-score">0</span> PTS</div>
+            <div class="stat" style="color: #fff;">⏱️ <span id="ui-time">30</span>s</div>
+        </div>
+        <div id="controls">
+            <div id="btn-left" class="btn-move">◀</div>
+            <div id="btn-right" class="btn-move">▶</div>
+        </div>
+    </div>
+
+    <div id="start-screen" class="screen">
+        <div style="font-size: 80px; margin-bottom: 10px;">🫏</div>
+        <h1>DONKEY RUN</h1>
+        <p>Laufe den Feldweg entlang, weiche den Schlangen aus und merke dir, was du einsammelst!</p>
+        <ul style="text-align: left; margin-bottom: 30px; list-style: none;">
+            <li>👈 👉 <b>Tasten/Buttons:</b> Bahnen wechseln</li>
+            <li>👈+👉 <b>Gleichzeitig:</b> Springen!</li>
+            <li>🐍 <b>Schlangen:</b> Ausweichen/Überspringen</li>
+            <li>🧠 <b>Sammeln:</b> Merke dir die Reihenfolge!</li>
+        </ul>
+        <button class="btn" onclick="startGame()">LOSREITEN!</button>
+    </div>
+
+    <div id="quiz-screen" class="screen">
+        <h1 style="color: #fff; font-size: 30px;">🧠 MEMORY CHECK</h1>
+        <p style="color: var(--accent);">In welcher Reihenfolge hast du die Objekte im letzten Level gesammelt?</p>
+        <div id="quiz-options"></div>
+    </div>
+
+    <div id="game-over-screen" class="screen" style="display: none;">
+        <h1 style="color: var(--danger);">SPIEL VORBEI</h1>
+        <p>Dein Highscore: <b id="final-score" style="color: var(--accent); font-size: 24px;">0</b></p>
+        <button class="btn" onclick="resetGame()">NEUSTART</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+let W = canvas.width = 450;
+let H = canvas.height = window.innerHeight > 850 ? 850 : window.innerHeight;
+
+// Game State
+let active = false;
+let level = 1;
+let hp = 3;
+let score = 0;
+let timeLeft = 30;
+let timeAccumulator = 0;
+let speedMult = 1;
+
+// Input State
+let keys = { ArrowLeft: false, ArrowRight: false };
+let touches = { left: false, right: false };
+
+// Player Logic
+const lanes = [W*0.1, W*0.3, W*0.5, W*0.7, W*0.9];
+let playerLane = 2;
+let playerX = lanes[playerLane];
+let playerY = H - 150;
+let jumpHeight = 0;
+let isJumping = false;
+let jumpVelocity = 0;
+
+// Entities
+let hazards = []; // Snakes
+let collectibles = []; // Objects to remember
+let collectedSequence = []; // Array of collected strings
+let particles = [];
+
+// Themes per Level
+const levelThemes = [
+    { type: 'colors', items: ['🔴', '🔵', '🟢', '🟡', '🟣'], donkeyColor: 0 },   // Level 1: Standard
+    { type: 'numbers', items: ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'], donkeyColor: 60 },  // Level 2: Grünstich
+    { type: 'shapes', items: ['⭐', '🔺', '🟦', '♦️', '🔶'], donkeyColor: 150 }, // Level 3: Blaustich
+    { type: 'mixed', items: ['🔴', '2️⃣', '⭐', '🟢', '♦️'], donkeyColor: 300 }   // Level 4+: Rotstich
+];
+
+// --- Input Handling ---
+window.addEventListener('keydown', e => {
+    if (!active) return;
+    if (e.key === 'ArrowLeft') keys.ArrowLeft = true;
+    if (e.key === 'ArrowRight') keys.ArrowRight = true;
+    checkJump();
+});
+window.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft') keys.ArrowLeft = false;
+    if (e.key === 'ArrowRight') keys.ArrowRight = false;
+});
+
+// Mobile Controls
+const btnL = document.getElementById('btn-left');
+const btnR = document.getElementById('btn-right');
+btnL.addEventListener('touchstart', e => { e.preventDefault(); touches.left = true; btnL.classList.add('active'); checkJump(); });
+btnL.addEventListener('touchend', e => { e.preventDefault(); touches.left = false; btnL.classList.remove('active'); });
+btnR.addEventListener('touchstart', e => { e.preventDefault(); touches.right = true; btnR.classList.add('active'); checkJump(); });
+btnR.addEventListener('touchend', e => { e.preventDefault(); touches.right = false; btnR.classList.remove('active'); });
+
+function checkJump() {
+    if ((keys.ArrowLeft && keys.ArrowRight) || (touches.left && touches.right)) {
+        if (!isJumping) {
+            isJumping = true;
+            jumpVelocity = 15; // Sprungkraft
+            keys.ArrowLeft = keys.ArrowRight = touches.left = touches.right = false; // Reset Input to prevent moving immediately
+        }
+    } else if (!isJumping) {
+        if (keys.ArrowLeft || touches.left) movePlayer(-1);
+        else if (keys.ArrowRight || touches.right) movePlayer(1);
+        
+        // Reset Inputs after move so you have to tap again
+        keys.ArrowLeft = keys.ArrowRight = touches.left = touches.right = false;
+    }
+}
+
+function movePlayer(dir) {
+    playerLane = Math.max(0, Math.min(4, playerLane + dir));
+}
+
+function startGame() {
+    document.getElementById("start-screen").style.display = "none";
+    document.getElementById("game-ui").style.display = "flex";
+    resetGame();
+}
+
+function resetGame() {
+    document.getElementById("game-over-screen").style.display = "none";
+    level = 1; hp = 3; score = 0;
+    startLevel();
+    active = true;
+    requestAnimationFrame(gameLoop);
+}
+
+function startLevel() {
+    timeLeft = 30;
+    collectedSequence = [];
+    hazards = [];
+    collectibles = [];
+    speedMult = 1 + (level * 0.15);
+    updateUI();
+}
+
+function triggerQuiz() {
+    active = false;
+    document.getElementById("game-ui").style.display = "none";
+    const quizScreen = document.getElementById("quiz-screen");
+    const optionsContainer = document.getElementById("quiz-options");
+    quizScreen.style.display = "flex";
+    optionsContainer.innerHTML = "";
+
+    if (collectedSequence.length === 0) {
+        // Spieler hat nichts eingesammelt - sofort nächstes Level
+        optionsContainer.innerHTML = "<p>Du hast nichts eingesammelt! Keine Bonuspunkte.</p>";
+        setTimeout(() => processQuizResult(false, true), 2000);
+        return;
+    }
+
+    // Generiere 3 Antwortmöglichkeiten
+    let correctStr = collectedSequence.join(" ");
+    let options = [correctStr];
+
+    // Erzeuge 2 falsche (gemischte) Antworten
+    while(options.length < 3) {
+        let shuffled = [...collectedSequence].sort(() => Math.random() - 0.5).join(" ");
+        // Fallback, falls Mischen zufällig gleich ist oder zu wenig Items da sind
+        if (shuffled === correctStr || options.includes(shuffled)) {
+            let pool = levelThemes[Math.min(level-1, 3)].items;
+            shuffled = collectedSequence.map(() => pool[Math.floor(Math.random()*pool.length)]).join(" ");
+        }
+        if(!options.includes(shuffled)) options.push(shuffled);
+    }
+
+    // Mische die Optionen für die Anzeige
+    options.sort(() => Math.random() - 0.5);
+
+    options.forEach(opt => {
+        let btn = document.createElement("button");
+        btn.className = "quiz-option";
+        btn.innerText = opt;
+        btn.onclick = () => {
+            let isCorrect = (opt === correctStr);
+            btn.style.background = isCorrect ? "var(--grass)" : "var(--danger)";
+            setTimeout(() => processQuizResult(isCorrect, false), 1000);
+        };
+        optionsContainer.appendChild(btn);
+    });
+}
+
+function processQuizResult(isCorrect, empty) {
+    if (!empty) {
+        if (isCorrect) {
+            score += 1000 * level;
+            spawnParticles(W/2, H/2, "#FFD700", 30);
+        } else {
+            hp -= 1; 
+            spawnParticles(W/2, H/2, "#FF4500", 30);
+        }
+    }
+    
+    document.getElementById("quiz-screen").style.display = "none";
+    
+    if (hp <= 0) {
+        gameOver();
+    } else {
+        level++;
+        startLevel();
+        document.getElementById("game-ui").style.display = "flex";
+        active = true;
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+function gameOver() {
+    active = false;
+    document.getElementById("game-ui").style.display = "none";
+    document.getElementById("game-over-screen").style.display = "flex";
+    document.getElementById("final-score").innerText = score;
+}
+
+function updateUI() {
+    document.getElementById("ui-lvl").innerText = level;
+    document.getElementById("ui-hp").innerText = hp;
+    document.getElementById("ui-score").innerText = score;
+    document.getElementById("ui-time").innerText = Math.ceil(timeLeft);
+}
+
+function spawnParticles(x, y, color, count) {
+    for(let i=0; i<count; i++) {
+        particles.push({
+            x: x, y: y,
+            vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
+            life: 1, c: color
+        });
+    }
+}
+
+let lastTime = 0;
+function gameLoop(timestamp) {
+    if (!active) return;
+    requestAnimationFrame(gameLoop);
+    
+    let dt = (timestamp - lastTime) / 1000;
+    if (dt > 0.1) dt = 0.016;
+    lastTime = timestamp;
+
+    timeLeft -= dt;
+    timeAccumulator += dt;
+
+    if (timeLeft <= 0) {
+        triggerQuiz();
+        return;
+    }
+
+    // Logic
+    playerX += (lanes[playerLane] - playerX) * 0.2; // Smooth lane change
+    
+    // Jump Physics
+    if (isJumping) {
+        jumpHeight += jumpVelocity;
+        jumpVelocity -= 0.8; // Gravity
+        if (jumpHeight <= 0) {
+            jumpHeight = 0;
+            isJumping = false;
+        }
+    }
+
+    let currentTheme = levelThemes[Math.min(level-1, 3)];
+
+    // Spawning
+    if (timeAccumulator > 1.2 / speedMult) {
+        timeAccumulator = 0;
+        let randLane = Math.floor(Math.random() * 5);
+        
+        if (Math.random() > 0.4) {
+            // Spawn Hazard (Snake)
+            hazards.push({ x: lanes[randLane], y: -50, speed: 300 * speedMult });
+        } else {
+            // Spawn Collectible (Memory Item)
+            // Limit sequence to max 7 items to keep it fair
+            if (collectedSequence.length < 7) {
+                let item = currentTheme.items[Math.floor(Math.random() * currentTheme.items.length)];
+                collectibles.push({ x: lanes[randLane], y: -50, speed: 200 * speedMult, type: item });
+            }
+        }
+    }
+
+    // Render Background (Dirt Road effect)
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = "rgba(139, 69, 19, 0.2)"; // Moving stripes
+    for(let i=0; i<H; i+=50) {
+        let yOffset = (i + (timestamp * 0.2 * speedMult)) % H;
+        ctx.fillRect(0, yOffset, W, 25);
+    }
+
+    // Draw Lanes
+    ctx.strokeStyle = "rgba(255,255,255,0.2)";
+    ctx.lineWidth = 2;
+    lanes.forEach(l => {
+        ctx.beginPath(); ctx.moveTo(l, 0); ctx.lineTo(l, H); ctx.stroke();
+    });
+
+    // Update & Render Collectibles
+    ctx.font = "40px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (let i = collectibles.length - 1; i >= 0; i--) {
+        let c = collectibles[i];
+        c.y += c.speed * dt;
+        ctx.fillText(c.type, c.x, c.y);
+
+        // Collision
+        if (Math.abs(c.x - playerX) < 40 && Math.abs(c.y - playerY) < 40 && jumpHeight < 30) {
+            collectedSequence.push(c.type);
+            score += 50;
+            spawnParticles(c.x, c.y, "#FFD700", 5);
+            collectibles.splice(i, 1);
+        } else if (c.y > H + 50) {
+            collectibles.splice(i, 1);
+        }
+    }
+
+    // Update & Render Hazards (Snakes)
+    for (let i = hazards.length - 1; i >= 0; i--) {
+        let h = hazards[i];
+        h.y += h.speed * dt;
+        
+        ctx.save();
+        ctx.translate(h.x, h.y);
+        ctx.rotate(Math.sin(timestamp/100) * 0.2); // Wiggle
+        ctx.fillText("🐍", 0, 0);
+        ctx.restore();
+
+        // Collision (nur wenn NICHT gesprungen wird!)
+        if (Math.abs(h.x - playerX) < 40 && Math.abs(h.y - playerY) < 40 && jumpHeight < 40) {
+            hp--;
+            spawnParticles(h.x, h.y, "#FF4500", 15);
+            hazards.splice(i, 1);
+            if (hp <= 0) gameOver();
+        } else if (h.y > H + 50) {
+            hazards.splice(i, 1);
+        }
+    }
+
+    // Render Particles
+    for(let i=particles.length-1; i>=0; i--) {
+        let p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.life -= dt * 2;
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.c;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();
+        if(p.life <= 0) particles.splice(i, 1);
+    }
+    ctx.globalAlpha = 1;
+
+    // Render Player (Donkey from behind simulation)
+    ctx.save();
+    ctx.filter = `hue-rotate(${currentTheme.donkeyColor}deg)`;
+    ctx.translate(playerX, playerY - jumpHeight);
+    
+    // Kleiner Trick: Wir zeichnen den Esel und skalieren ihn leicht, um Sprung zu betonen
+    let scale = 1 + (jumpHeight / 200);
+    ctx.scale(scale, scale);
+    
+    // Esel Kopf (Schatten für Tiefe)
+    ctx.shadowColor = "rgba(0,0,0,0.5)";
+    ctx.shadowBlur = 10;
+    ctx.font = "60px Arial";
+    ctx.fillText("🫏", 0, 0);
+    ctx.restore();
+
+    updateUI();
+}
+
+// Initialer Canvas Resize Fix
+window.addEventListener('resize', () => {
+    W = canvas.width = document.getElementById('game-container').clientWidth;
+    H = canvas.height = document.getElementById('game-container').clientHeight;
+});
+</script>
+</body>
+</html>
