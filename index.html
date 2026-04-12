@@ -3,457 +3,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>DONKEY RUN & REMEMBER</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <title>DONKEY MISSION - INFINITE EDITION</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫏</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --grass: #2E8B57;
-            --accent: #FFD700; --danger: #FF4500;
+        :root { 
+            --neon: #00f2ff; --green: #00ff88; --red: #ff3131; 
+            --gold: #FFD700; --silver: #C0C0C0; --bronze: #CD7F32; 
+            --cat: #bc13fe; --rabbit: #ff8c00; --fox: #ff4500; --panda: #ffffff;
+            --unicorn: #ff00ff;
+            --rad: #adff2f;
+            --glass: rgba(255, 255, 255, 0.08);
         }
         
-        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-touch-callout: none; }
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; outline: none; 
+            user-select: none; -webkit-user-select: none; 
+        }
         
+        input[type="text"] { user-select: auto; -webkit-user-select: auto; transition: 0.3s; }
+
+        html, body {
+            overscroll-behavior: none;
+            width: 100vw; height: 100dvh; overflow: hidden; 
+        }
+
         body { 
-            background: #111; font-family: 'Nunito', sans-serif; color: #fff; 
+            background: #111; font-family: 'Orbitron', sans-serif; color: #fff; 
             display: flex; justify-content: center; align-items: center; 
-            width: 100vw; height: 100dvh; overflow: hidden; overscroll-behavior: none;
         }
 
-        #game-container {
-            position: relative; width: 100%; max-width: 450px; height: 100%; max-height: 850px;
-            background: #000; /* Fallback, falls das Hintergrundbild noch lädt */
-            overflow: hidden; box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        /* --- NEUER HINTERGRUND AUFBAU --- */
+        #bg-top { 
+            position: absolute; 
+            top: 0; left: 0; right: 0; 
+            height: 40%; 
+            background-image: url('hintergrund_top.png'); 
+            background-size: cover; 
+            background-position: bottom center; 
+            z-index: 1; 
         }
 
-        @media (min-width: 450px) { #game-container { height: 90vh; border-radius: 20px; } }
+        #bg-bottom { 
+            position: absolute; 
+            top: 40%; left: 0; right: 0; bottom: 0; 
+            background-image: url('hintergrund_bottom.png'); 
+            background-size: 100% auto; 
+            background-repeat: repeat-y; 
+            z-index: 1; 
+        }
 
-        canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 10; }
+        #bg-overlay { position: absolute; inset: 0; background: radial-gradient(circle, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.4) 100%); z-index: 2; }
 
-        .ui-layer { position: absolute; inset: 0; z-index: 20; pointer-events: none; display: flex; flex-direction: column; }
+        #phone-container { position: relative; width: 100%; max-width: 420px; height: 100%; background: transparent; z-index: 10; overflow: hidden; transition: border-color 0.3s, box-shadow 0.3s; }
+
+        @media (min-width: 450px) {
+            #phone-container { height: 90vh; max-height: 850px; border-radius: 35px; }
+            #phone-container.is-playing { border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 15px 40px rgba(0,0,0,0.8); }
+            #bg-overlay { background: radial-gradient(circle, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.8) 100%); }
+        }
+
+        #game-wrap { position: absolute; inset: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.1); touch-action: none; overflow: hidden; visibility: hidden; pointer-events: none; z-index: 20; }
+        #canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 50; touch-action: none; }
+
+        #hud { position: absolute; top: env(safe-area-inset-top, 10px); width: 100%; z-index: 200; pointer-events: none; padding-top: 10px; }
         
-        #hud { padding: 15px; display: flex; justify-content: space-between; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
-        .stat { font-family: 'Fredoka One', cursive; font-size: 20px; text-shadow: 2px 2px 0 #000; }
-        .stat-score { color: var(--accent); }
+        #mission-title { text-align: center; font-size: 28px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; color: var(--neon); text-shadow: 0 0 10px var(--neon), 0 0 20px var(--neon); animation: pulseNeon 1.5s infinite alternate; }
+        @keyframes pulseNeon { 0% { opacity: 0.7; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1.02); } }
 
-        #controls { position: absolute; bottom: 15px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; pointer-events: auto; }
-        .btn-move { 
-            width: 80px; height: 80px; background: rgba(255,255,255,0.2); border: 3px solid rgba(255,255,255,0.5); 
-            border-radius: 50%; color: #fff; font-size: 40px; display: flex; align-items: center; justify-content: center; 
-            backdrop-filter: blur(5px); transition: 0.1s; cursor: pointer; touch-action: none;
-        }
-        .btn-move:active, .btn-move.active { background: rgba(255,255,255,0.6); transform: scale(0.9); }
-
-        /* Screens */
-        .screen { position: absolute; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; text-align: center; padding: 20px; }
-        h1 { font-family: 'Fredoka One', cursive; font-size: 40px; color: var(--accent); margin-bottom: 20px; text-shadow: 0 5px 10px rgba(0,0,0,0.5); }
-        p { font-size: 18px; margin-bottom: 20px; line-height: 1.5; }
+        #energy-box { width: 85%; height: 22px; margin: 0 auto 10px; background: rgba(0,0,0,0.8); border-radius: 12px; border: 2px solid #fff; overflow: hidden; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        #energy-fill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--red), var(--gold), var(--green)); transition: width 0.2s linear; }
         
-        .btn { 
-            background: var(--grass); border: none; border-bottom: 5px solid #194d30; padding: 15px 30px; 
-            border-radius: 15px; color: #fff; font-size: 24px; font-family: 'Fredoka One', cursive; 
-            cursor: pointer; transition: 0.1s; margin-top: 10px; width: 100%; max-width: 300px;
-        }
-        .btn:active { transform: translateY(5px); border-bottom-width: 0; margin-bottom: 5px; }
+        #stats-bar { display: flex; justify-content: space-between; align-items: center; width: 90%; margin: 0 auto; background: rgba(255,255,255,0.15); padding: 8px 15px; border-radius: 15px; border: 1px solid var(--neon); backdrop-filter: blur(10px); }
+        .stat { font-weight: 900; font-size: 16px; text-shadow: 1px 1px 3px #000; font-variant-numeric: tabular-nums; }
 
-        /* Quiz Overlay */
-        #quiz-screen { background: rgba(20, 10, 0, 0.95); display: none; }
-        .quiz-option { 
-            background: #442211; border: 2px solid var(--accent); border-radius: 10px; 
-            padding: 15px; margin: 10px 0; font-size: 28px; width: 100%; max-width: 350px; 
-            cursor: pointer; transition: 0.2s; letter-spacing: 5px;
-        }
-        .quiz-option:active { background: var(--accent); color: #000; }
+        #controls { position: absolute; bottom: env(safe-area-inset-bottom, 15px); left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 10px; z-index: 300; pointer-events: none; }
+        .arrow { width: 120px; height: 120px; background: transparent; border: none; color: rgba(255, 255, 255, 0.5); font-size: 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.15s; pointer-events: auto; text-shadow: 0 0 10px rgba(0, 242, 255, 0.3); touch-action: none; }
+        .arrow.glow { color: var(--neon); transform: scale(0.95); text-shadow: 0 0 30px var(--neon), 0 0 50px var(--neon); }
 
+        #lvl-up-popup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255, 215, 0, 0.5); color: #fff; padding: 15px 30px; border-radius: 25px; font-family: 'Orbitron'; font-size: 28px; font-weight: 900; box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); text-shadow: 2px 2px 5px #000, 0 0 15px var(--gold); z-index: 500; opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; text-align: center; }
+        #lvl-up-popup.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+
+        #game-over-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.8s ease-in-out;
+        }
+        #game-over-overlay.show { opacity: 1; pointer-events: auto; }
+        .go-title {
+            font-size: 50px; color: var(--red); text-shadow: 0 0 20px var(--red), 0 0 40px var(--red);
+            font-weight: 900; letter-spacing: 5px; transform: scale(0.5); opacity: 0;
+            transition: transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.8s ease;
+            text-align: center; font-family: 'Orbitron', sans-serif;
+        }
+        #game-over-overlay.show .go-title { transform: scale(1); opacity: 1; }
+
+        .screen { 
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100; 
+            overflow-y: auto; -webkit-overflow-scrolling: touch; pointer-events: auto; padding-bottom: 50px;
+            overscroll-behavior: none;
+            background: transparent; 
+        }
+
+        .screen-inner { 
+            width: 100%; min-height: 100dvh; margin: 0 auto; max-width: 420px; 
+            display: flex; flex-direction: column; justify-content: flex-start; align-items: center; 
+            padding: 40px 10px 100px 10px; 
+        }
+
+        .start-glass-panel {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 35px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+
+        .btn-main { padding: 15px; border-radius: 15px; border: none; background: var(--green); color: #000; font-weight: 900; font-family: 'Orbitron'; font-size: 18px; width: 100%; cursor: pointer; box-shadow: 0 6px 0 #00b362, 0 10px 20px rgba(0,255,136,0.3); transition: 0.1s; transform: translateY(0); }
+        .btn-main:active { transform: translateY(6px); box-shadow: 0 0px 0 #00b362, 0 2px 5px rgba(0,255,136,0.4); }
+
+        .name-input { width: 100%; padding: 15px; border-radius: 15px; border: 1px solid var(--neon); background: rgba(0,0,0,0.7); color: #fff; text-align: center; font-family: 'Orbitron'; font-size: 20px; text-shadow: 1px 1px 5px #000; outline: none; }
+        .btn-char { padding: 12px 2px; border-radius: 15px; border: 2px solid var(--neon); background: rgba(0,0,0,0.4); color: #fff; cursor: pointer; font-family: 'Orbitron'; font-size: 12px; font-weight: bold; transition: 0.1s; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 0 var(--neon), 0 5px 10px rgba(0,0,0,0.2); transform: translateY(0); flex-shrink: 0; }
+        .btn-char span { font-size: 36px; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <canvas id="gameCanvas"></canvas>
+<div id="bg-top"></div>
+<div id="bg-bottom"></div>
+<div id="bg-overlay"></div>
+
+<div id="game-over-overlay">
+    <div class="go-title">MISSION GESCHEITERT</div>
+</div>
+
+<div id="phone-container">
     
-    <div class="ui-layer" id="game-ui" style="display: none;">
+    <div id="game-wrap">
         <div id="hud">
-            <div class="stat">LVL <span id="ui-lvl">1</span></div>
-            <div class="stat">❤️ <span id="ui-hp">3</span></div>
-            <div class="stat stat-score"><span id="ui-score">0</span> PTS</div>
-            <div class="stat" style="color: #fff;">⏱️ <span id="ui-time">30</span>s</div>
+            <div id="mission-title">DONKEY MISSION</div>
+            <div id="energy-box"><div id="energy-fill"></div></div>
+            <div id="stats-bar">
+                <div class="stat" style="background:var(--neon); color:#000; padding:2px 8px; border-radius:5px; font-weight:900; font-size:16px; text-shadow:none;">LVL <span id="lvl-txt">1</span></div>
+                <div id="hp-txt" class="stat">❤️❤️❤️</div>
+                <div id="score-txt" class="stat" style="color:var(--gold)">0 PTS</div>
+                <div id="time-txt" class="stat" style="color:var(--neon)">30s</div>
+            </div>
         </div>
+
+        <canvas id="canvas"></canvas>
+
+        <div id="lvl-up-popup">NÄCHSTES LEVEL!</div>
+
         <div id="controls">
-            <div id="btn-left" class="btn-move">◀</div>
-            <div id="btn-right" class="btn-move">▶</div>
+            <div id="btn-left" class="arrow" onmousedown="triggerMove(-1, 'btn-left')" ontouchstart="event.preventDefault(); triggerMove(-1, 'btn-left')">◀</div>
+            <div id="btn-right" class="arrow" onmousedown="triggerMove(1, 'btn-right')" ontouchstart="event.preventDefault(); triggerMove(1, 'btn-right')">▶</div>
         </div>
     </div>
 
-    <div id="start-screen" class="screen">
-        <div style="width: 100px; height: 100px; margin-bottom: 10px; background-image: url('donkey.png'); background-size: contain; background-repeat: no-repeat; background-position: center;"></div>
-        <h1>DONKEY RUN</h1>
-        <p>Laufe den Feldweg entlang, weiche den Schlangen aus und merke dir, was du einsammelst!</p>
-        <ul style="text-align: left; margin-bottom: 30px; list-style: none;">
-            <li>👈 👉 <b>Tasten/Buttons:</b> Bahnen wechseln</li>
-            <li>👈+👉 <b>Gleichzeitig:</b> Springen!</li>
-            <li>🐍 <b>Schlangen:</b> Ausweichen/Überspringen</li>
-            <li>🧠 <b>Sammeln:</b> Merke dir die Reihenfolge!</li>
-        </ul>
-        <button class="btn" onclick="startGame()">LOSREITEN!</button>
+    <div id="scr-start" class="screen">
+        <div class="screen-inner">
+            <div class="start-glass-panel">
+                <h1 style="color:var(--gold); margin-bottom:20px;">DONKEY MISSION</h1>
+                <input type="text" id="pName" class="name-input" placeholder="CODENAME EINGEBEN" maxlength="12">
+                <div style="display:flex; gap:10px; margin-top:20px; width:100%;">
+                    <button class="btn-char" style="flex:1;" onclick="start('dog', 1)"><span>🫏</span>START</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="quiz-screen" class="screen">
-        <h1 style="color: #fff; font-size: 30px;">🧠 MEMORY CHECK</h1>
-        <p style="color: var(--accent);">In welcher Reihenfolge hast du die Objekte im letzten Level gesammelt?</p>
-        <div id="quiz-options"></div>
-    </div>
-
-    <div id="game-over-screen" class="screen" style="display: none;">
-        <h1 style="color: var(--danger);">SPIEL VORBEI</h1>
-        <p>Dein Highscore: <b id="final-score" style="color: var(--accent); font-size: 24px;">0</b></p>
-        <button class="btn" onclick="resetGame()">NEUSTART</button>
+    <div id="scr-end" class="screen" style="display:none">
+        <div class="screen-inner"> 
+            <div class="start-glass-panel">
+                <h1 id="end-agent-name">SPIELER</h1>
+                <h1 id="f-score">0 PTS</h1> 
+                <button class="btn-main" onclick="goToLevelSelect()">NEUSTART</button> 
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-// Bilder laden
-const bgImg = new Image();
-bgImg.src = 'hintergrund.png';
-
-const donkeyImg = new Image();
-donkeyImg.src = 'donkey.png';
-
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-let W = canvas.width = 450;
-let H = canvas.height = window.innerHeight > 850 ? 850 : window.innerHeight;
-
-// Game State
+// --- SPIEL LOGIK ---
 let active = false;
-let level = 1;
-let hp = 3;
-let score = 0;
-let timeLeft = 30;
-let timeAccumulator = 0;
-let speedMult = 1;
-let bgScrollY = 0; // Für den rollenden Hintergrund
+let mode = 'dog';
+let agent = "UNKNOWN";
+let score = 0, hp = 3, energy = 100, level = 1, timeLeft = 30;
+let lastT = 0;
+let bgScrollY = 0; // Für den unendlichen Weg
 
-// Input State
-let keys = { ArrowLeft: false, ArrowRight: false };
-let touches = { left: false, right: false };
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const W = 400, H = 700;
+canvas.width = W; canvas.height = H;
 
-// Player Logic
-const lanes = [W*0.1, W*0.3, W*0.5, W*0.7, W*0.9];
-let playerLane = 2;
-let playerX = lanes[playerLane];
-let playerY = H - 150;
-let jumpHeight = 0;
-let isJumping = false;
-let jumpVelocity = 0;
+const lanes = [40, 120, 200, 280, 360];
+let currLane = 2, playerX = lanes[2], targetX = lanes[2];
 
-// Entities
-let hazards = []; 
-let collectibles = []; 
-let collectedSequence = []; 
-let particles = [];
-
-// Themes per Level (donkeyColor verändert den Hue-Filter des Esels leicht pro Level)
-const levelThemes = [
-    { type: 'colors', items: ['🔴', '🔵', '🟢', '🟡', '🟣'], donkeyColor: 0 },
-    { type: 'numbers', items: ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'], donkeyColor: 60 },
-    { type: 'shapes', items: ['⭐', '🔺', '🟦', '♦️', '🔶'], donkeyColor: 150 },
-    { type: 'mixed', items: ['🔴', '2️⃣', '⭐', '🟢', '♦️'], donkeyColor: 300 }
-];
-
-// --- Input Handling ---
-window.addEventListener('keydown', e => {
-    if (!active) return;
-    if (e.key === 'ArrowLeft') keys.ArrowLeft = true;
-    if (e.key === 'ArrowRight') keys.ArrowRight = true;
-    checkJump();
-});
-window.addEventListener('keyup', e => {
-    if (e.key === 'ArrowLeft') keys.ArrowLeft = false;
-    if (e.key === 'ArrowRight') keys.ArrowRight = false;
-});
-
-const btnL = document.getElementById('btn-left');
-const btnR = document.getElementById('btn-right');
-btnL.addEventListener('touchstart', e => { e.preventDefault(); touches.left = true; btnL.classList.add('active'); checkJump(); });
-btnL.addEventListener('touchend', e => { e.preventDefault(); touches.left = false; btnL.classList.remove('active'); });
-btnR.addEventListener('touchstart', e => { e.preventDefault(); touches.right = true; btnR.classList.add('active'); checkJump(); });
-btnR.addEventListener('touchend', e => { e.preventDefault(); touches.right = false; btnR.classList.remove('active'); });
-
-function checkJump() {
-    if ((keys.ArrowLeft && keys.ArrowRight) || (touches.left && touches.right)) {
-        if (!isJumping) {
-            isJumping = true;
-            jumpVelocity = 15;
-            keys.ArrowLeft = keys.ArrowRight = touches.left = touches.right = false; 
-        }
-    } else if (!isJumping) {
-        if (keys.ArrowLeft || touches.left) movePlayer(-1);
-        else if (keys.ArrowRight || touches.right) movePlayer(1);
-        keys.ArrowLeft = keys.ArrowRight = touches.left = touches.right = false;
-    }
-}
-
-function movePlayer(dir) {
-    playerLane = Math.max(0, Math.min(4, playerLane + dir));
-}
-
-function startGame() {
-    document.getElementById("start-screen").style.display = "none";
-    document.getElementById("game-ui").style.display = "flex";
-    resetGame();
-}
-
-function resetGame() {
-    document.getElementById("game-over-screen").style.display = "none";
-    level = 1; hp = 3; score = 0;
-    startLevel();
+function start(m, startLvl) {
+    let nameInput = document.getElementById("pName");
+    agent = nameInput.value.trim().toUpperCase() || "AGENT";
+    
     active = true;
-    requestAnimationFrame(gameLoop);
+    level = startLvl;
+    hp = 3; score = 0; energy = 100; timeLeft = 30;
+    
+    document.getElementById("scr-start").style.display = "none";
+    document.getElementById("game-wrap").style.visibility = "visible";
+    document.getElementById("game-wrap").style.pointerEvents = "auto";
+    
+    requestAnimationFrame(loop);
 }
 
-function startLevel() {
-    timeLeft = 30;
-    collectedSequence = [];
-    hazards = [];
-    collectibles = [];
-    speedMult = 1 + (level * 0.15);
-    updateUI();
+function triggerMove(dir, btnId) {
+    currLane = Math.max(0, Math.min(4, currLane + dir));
+    targetX = lanes[currLane];
+    let btn = document.getElementById(btnId);
+    if(btn) { btn.classList.add("glow"); setTimeout(() => btn.classList.remove("glow"), 150); }
 }
 
-function triggerQuiz() {
+function goToLevelSelect() {
+    location.reload();
+}
+
+function showEndScreen() {
     active = false;
-    document.getElementById("game-ui").style.display = "none";
-    const quizScreen = document.getElementById("quiz-screen");
-    const optionsContainer = document.getElementById("quiz-options");
-    quizScreen.style.display = "flex";
-    optionsContainer.innerHTML = "";
-
-    if (collectedSequence.length === 0) {
-        optionsContainer.innerHTML = "<p>Du hast nichts eingesammelt! Keine Bonuspunkte.</p>";
-        setTimeout(() => processQuizResult(false, true), 2000);
-        return;
-    }
-
-    let correctStr = collectedSequence.join(" ");
-    let options = [correctStr];
-
-    while(options.length < 3) {
-        let shuffled = [...collectedSequence].sort(() => Math.random() - 0.5).join(" ");
-        if (shuffled === correctStr || options.includes(shuffled)) {
-            let pool = levelThemes[Math.min(level-1, 3)].items;
-            shuffled = collectedSequence.map(() => pool[Math.floor(Math.random()*pool.length)]).join(" ");
-        }
-        if(!options.includes(shuffled)) options.push(shuffled);
-    }
-
-    options.sort(() => Math.random() - 0.5);
-
-    options.forEach(opt => {
-        let btn = document.createElement("button");
-        btn.className = "quiz-option";
-        btn.innerText = opt;
-        btn.onclick = () => {
-            let isCorrect = (opt === correctStr);
-            btn.style.background = isCorrect ? "var(--grass)" : "var(--danger)";
-            setTimeout(() => processQuizResult(isCorrect, false), 1000);
-        };
-        optionsContainer.appendChild(btn);
-    });
+    document.getElementById("game-wrap").style.visibility = "hidden";
+    document.getElementById("scr-end").style.display = "flex";
+    document.getElementById("end-agent-name").innerText = agent;
+    document.getElementById("f-score").innerText = Math.floor(score) + " PTS";
 }
 
-function processQuizResult(isCorrect, empty) {
-    if (!empty) {
-        if (isCorrect) {
-            score += 1000 * level;
-            spawnParticles(W/2, H/2, "#FFD700", 30);
-        } else {
-            hp -= 1; 
-            spawnParticles(W/2, H/2, "#FF4500", 30);
-        }
-    }
+function loop(t) {
+    if(!active) return;
+    let dt = (t - (lastT || t)) / 1000;
+    lastT = t;
+    if(dt > 0.1) dt = 0.016;
+
+    // --- HINTERGRUND ANIMATION ---
+    let ptsScaling = 1 + (level - 1) * (1.2 / 11);
+    let speedMult = ptsScaling;
     
-    document.getElementById("quiz-screen").style.display = "none";
-    
-    if (hp <= 0) {
-        gameOver();
-    } else {
-        level++;
-        startLevel();
-        document.getElementById("game-ui").style.display = "flex";
-        active = true;
-        requestAnimationFrame(gameLoop);
-    }
-}
+    bgScrollY += (180 * speedMult) * dt;
+    let playerOffsetX = ((W / 2) - playerX);
 
-function gameOver() {
-    active = false;
-    document.getElementById("game-ui").style.display = "none";
-    document.getElementById("game-over-screen").style.display = "flex";
-    document.getElementById("final-score").innerText = score;
-}
+    document.getElementById("bg-top").style.backgroundPosition = `calc(50% + ${playerOffsetX * 0.01}px) bottom`;
+    document.getElementById("bg-bottom").style.backgroundPosition = `calc(50% + ${playerOffsetX * 0.03}px) ${bgScrollY}px`;
 
-function updateUI() {
-    document.getElementById("ui-lvl").innerText = level;
-    document.getElementById("ui-hp").innerText = hp;
-    document.getElementById("ui-score").innerText = score;
-    document.getElementById("ui-time").innerText = Math.ceil(timeLeft);
-}
-
-function spawnParticles(x, y, color, count) {
-    for(let i=0; i<count; i++) {
-        particles.push({
-            x: x, y: y,
-            vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
-            life: 1, c: color
-        });
-    }
-}
-
-let lastTime = 0;
-function gameLoop(timestamp) {
-    if (!active) return;
-    requestAnimationFrame(gameLoop);
-    
-    let dt = (timestamp - lastTime) / 1000;
-    if (dt > 0.1) dt = 0.016;
-    lastTime = timestamp;
-
+    // --- SPIEL UPDATES ---
     timeLeft -= dt;
-    timeAccumulator += dt;
+    energy -= 4 * dt;
+    if(timeLeft <= 0) { level++; timeLeft = 30; energy = 100; }
+    if(energy <= 0) { hp--; energy = 100; }
+    if(hp <= 0) { showEndScreen(); return; }
 
-    if (timeLeft <= 0) {
-        triggerQuiz();
-        return;
-    }
+    // HUD Update
+    document.getElementById("lvl-txt").innerText = level;
+    document.getElementById("hp-txt").innerText = "❤️".repeat(hp);
+    document.getElementById("score-txt").innerText = Math.floor(score) + " PTS";
+    document.getElementById("time-txt").innerText = Math.ceil(timeLeft) + "s";
+    document.getElementById("energy-fill").style.width = energy + "%";
 
-    // Logic
-    playerX += (lanes[playerLane] - playerX) * 0.2; 
+    // Zeichnen
+    ctx.clearRect(0, 0, W, H);
+    playerX += (targetX - playerX) * 0.15;
     
-    if (isJumping) {
-        jumpHeight += jumpVelocity;
-        jumpVelocity -= 0.8; 
-        if (jumpHeight <= 0) {
-            jumpHeight = 0;
-            isJumping = false;
-        }
-    }
-
-    let currentTheme = levelThemes[Math.min(level-1, 3)];
-
-    // Spawning
-    if (timeAccumulator > 1.2 / speedMult) {
-        timeAccumulator = 0;
-        let randLane = Math.floor(Math.random() * 5);
-        
-        if (Math.random() > 0.4) {
-            hazards.push({ x: lanes[randLane], y: -50, speed: 300 * speedMult });
-        } else {
-            if (collectedSequence.length < 7) {
-                let item = currentTheme.items[Math.floor(Math.random() * currentTheme.items.length)];
-                collectibles.push({ x: lanes[randLane], y: -50, speed: 200 * speedMult, type: item });
-            }
-        }
-    }
-
-    ctx.clearRect(0,0,W,H);
-
-    // Rollender Hintergrund (hintergrund.png)
-    if (bgImg.complete && bgImg.naturalHeight !== 0) {
-        bgScrollY += 100 * speedMult * dt;
-        if (bgScrollY >= H) bgScrollY = 0;
-        
-        // Zeichnet das Bild zweimal übereinander für einen nahtlosen Loop
-        ctx.drawImage(bgImg, 0, bgScrollY, W, H);
-        ctx.drawImage(bgImg, 0, bgScrollY - H, W, H);
-    }
-
-    // Bahnen zeichnen (Linien auf dem Hintergrund)
-    ctx.strokeStyle = "rgba(255,255,255,0.3)";
-    ctx.lineWidth = 2;
-    lanes.forEach(l => {
-        ctx.beginPath(); ctx.moveTo(l, 0); ctx.lineTo(l, H); ctx.stroke();
-    });
-
-    // Update & Render Collectibles
-    ctx.font = "40px Arial";
+    ctx.font = "70px Arial";
     ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    for (let i = collectibles.length - 1; i >= 0; i--) {
-        let c = collectibles[i];
-        c.y += c.speed * dt;
-        ctx.fillText(c.type, c.x, c.y);
+    ctx.fillText("🫏", playerX, H - 80);
 
-        if (Math.abs(c.x - playerX) < 40 && Math.abs(c.y - playerY) < 40 && jumpHeight < 30) {
-            collectedSequence.push(c.type);
-            score += 50;
-            spawnParticles(c.x, c.y, "#FFD700", 5);
-            collectibles.splice(i, 1);
-        } else if (c.y > H + 50) {
-            collectibles.splice(i, 1);
-        }
-    }
-
-    // Update & Render Schlangen
-    for (let i = hazards.length - 1; i >= 0; i--) {
-        let h = hazards[i];
-        h.y += h.speed * dt;
-        
-        ctx.save();
-        ctx.translate(h.x, h.y);
-        ctx.rotate(Math.sin(timestamp/100) * 0.2); 
-        ctx.fillText("🐍", 0, 0);
-        ctx.restore();
-
-        if (Math.abs(h.x - playerX) < 40 && Math.abs(h.y - playerY) < 40 && jumpHeight < 40) {
-            hp--;
-            spawnParticles(h.x, h.y, "#FF4500", 15);
-            hazards.splice(i, 1);
-            if (hp <= 0) gameOver();
-        } else if (h.y > H + 50) {
-            hazards.splice(i, 1);
-        }
-    }
-
-    // Render Particles
-    for(let i=particles.length-1; i>=0; i--) {
-        let p = particles[i];
-        p.x += p.vx; p.y += p.vy; p.life -= dt * 2;
-        ctx.globalAlpha = Math.max(0, p.life);
-        ctx.fillStyle = p.c;
-        ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();
-        if(p.life <= 0) particles.splice(i, 1);
-    }
-    ctx.globalAlpha = 1;
-
-    // Render Esel (donkey.png)
-    if (donkeyImg.complete && donkeyImg.naturalHeight !== 0) {
-        ctx.save();
-        
-        // Leichter Farbfilter, damit sich die Level unterscheiden
-        ctx.filter = `hue-rotate(${currentTheme.donkeyColor}deg)`;
-        
-        ctx.translate(playerX, playerY - jumpHeight);
-        let scale = 1 + (jumpHeight / 200);
-        ctx.scale(scale, scale);
-        
-        // Schatten
-        ctx.shadowColor = "rgba(0,0,0,0.5)";
-        ctx.shadowBlur = 10;
-        
-        // Zeichnet das Esel-Bild. Breite 70, Höhe 70. Passt den Mittelpunkt an.
-        ctx.drawImage(donkeyImg, -35, -35, 70, 70);
-        
-        ctx.restore();
-    }
-
-    updateUI();
+    requestAnimationFrame(loop);
 }
-
-window.addEventListener('resize', () => {
-    W = canvas.width = document.getElementById('game-container').clientWidth;
-    H = canvas.height = document.getElementById('game-container').clientHeight;
-});
 </script>
 </body>
 </html>
