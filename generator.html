@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Donkey Run Hintergrund-Generator</title>
+    <style>
+        body { 
+            background: #222; color: white; text-align: center; 
+            font-family: 'Fredoka One', sans-serif; padding: 20px; 
+        }
+        canvas { 
+            border: 4px solid #444; border-radius: 10px; 
+            margin-bottom: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            max-height: 500px; /* Nur für die Ansicht verkleinert */
+        }
+        button { 
+            padding: 15px 30px; font-size: 20px; font-weight: bold;
+            background: #2E8B57; color: white; border: none; 
+            cursor: pointer; border-radius: 10px; transition: 0.2s;
+        }
+        button:hover { background: #3cb371; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+    <h1>Dein Hintergrund-Generator 🫏</h1>
+    <p>Hier ist dein nahtloser Feldweg mit Sternenhimmel. Klicke auf den Button, um ihn als PNG zu speichern.</p>
+    
+    <canvas id="bgCanvas" width="450" height="900"></canvas><br>
+    
+    <button onclick="downloadImage()">🖼️ als hintergrund.png speichern</button>
+
+    <script>
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+
+        // 1. Weltraum/Sternenhimmel (Außen)
+        ctx.fillStyle = '#0a0a2a'; // Dunkelblau/Schwarz
+        ctx.fillRect(0, 0, W, H);
+
+        // Sterne zeichnen (mit nahtlosem Übergang)
+        ctx.fillStyle = '#ffffff';
+        for(let i = 0; i < 200; i++) {
+            let x = Math.random() * W;
+            
+            // Sterne nur an den Rändern (0-80px und 370-450px)
+            if (x > 80 && x < 370) continue; 
+            
+            let y = Math.random() * H;
+            let size = Math.random() * 2 + 0.5;
+            
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Trick für Endlos-Scrolling: Sterne am oberen Rand nach unten spiegeln und umgekehrt
+            if (y < 20) { ctx.beginPath(); ctx.arc(x, y + H, size, 0, Math.PI * 2); ctx.fill(); }
+            if (y > H - 20) { ctx.beginPath(); ctx.arc(x, y - H, size, 0, Math.PI * 2); ctx.fill(); }
+        }
+
+        // 2. Feldweg (Mitte)
+        // Weg ist 290px breit, in der Mitte platziert
+        const roadX = 80;
+        const roadWidth = 290;
+        
+        // Farbverlauf für einen leichten 3D-Effekt am Wegesrand
+        const roadGradient = ctx.createLinearGradient(roadX, 0, roadX + roadWidth, 0);
+        roadGradient.addColorStop(0, '#5c3a21'); // Dunklerer Rand links
+        roadGradient.addColorStop(0.1, '#8b5a2b'); // Hellerer Sand
+        roadGradient.addColorStop(0.9, '#8b5a2b'); // Hellerer Sand
+        roadGradient.addColorStop(1, '#5c3a21'); // Dunklerer Rand rechts
+
+        ctx.fillStyle = roadGradient;
+        ctx.fillRect(roadX, 0, roadWidth, H);
+
+        // 3. Weg-Textur (kleine Steinchen und Sand-Details)
+        ctx.fillStyle = '#704822';
+        for(let i=0; i<600; i++) {
+            let x = roadX + 5 + Math.random() * (roadWidth - 10);
+            let y = Math.random() * H;
+            let dotWidth = Math.random() * 5 + 2;
+            let dotHeight = Math.random() * 15 + 2; // Längliche "Schlieren" für Geschwindigkeit
+            
+            ctx.fillRect(x, y, dotWidth, dotHeight);
+            
+            // Textur auch nahtlos machen
+            if (y < 20) ctx.fillRect(x, y + H, dotWidth, dotHeight);
+            if (y > H - 20) ctx.fillRect(x, y - H, dotWidth, dotHeight);
+        }
+
+        // Download-Funktion
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'hintergrund.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>
