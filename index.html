@@ -3,180 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>DONKEY MISSION - SMOOTH EDITION</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫏</text></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>DONKEY MISSION - FOOLPROOF EDITION</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&display=swap" rel="stylesheet">
     
     <style>
-        :root { 
-            --neon: #00f2ff; --green: #00ff88; --red: #ff3131; 
-            --gold: #FFD700; 
-        }
-        
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-
-        html, body {
-            width: 100vw; height: 100dvh; overflow: hidden; 
-            background: #111; font-family: 'Orbitron', sans-serif; color: #fff; 
+        
+        body { 
+            background: #111; 
+            font-family: 'Orbitron', sans-serif; 
             display: flex; justify-content: center; align-items: center; 
+            height: 100vh; overflow: hidden; color: #fff;
         }
 
-        #phone-container { 
+        #game-container { 
             position: relative; width: 100%; max-width: 420px; height: 100%; 
-            background: #000; overflow: hidden; z-index: 10; 
+            background: #000; overflow: hidden; border: 1px solid #333;
         }
 
-        @media (min-width: 450px) {
-            #phone-container { height: 90vh; max-height: 850px; border-radius: 35px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 15px 40px rgba(0,0,0,0.8); }
-        }
-
-        /* --- DER 3D HINTERGRUND TRICK --- */
-        #bg-top { 
-            position: absolute; top: 0; left: 0; right: 0; height: 45%; 
-            /* Ein schöner Sonnenuntergangs-Himmel */
-            background: linear-gradient(to bottom, #0a0026, #4b104b 50%, #ff4d00); 
+        /* 1. DER STATISCHE HIMMEL (OBEN) */
+        #sky { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 40%; 
+            /* Fallback: Blau. Wenn das Bild da ist, wird es angezeigt */
+            background-color: #1e3a8a;
+            background-image: url('hintergrund_top.png'); 
+            background-size: cover; 
+            background-position: bottom center; 
             z-index: 1; 
         }
 
-        #floor-container {
-            position: absolute; top: 45%; left: 0; right: 0; bottom: 0;
-            /* Hier entsteht die 3D Tiefe */
-            perspective: 300px; 
-            overflow: hidden;
-            z-index: 1;
+        /* 2. DER SCROLLENDE BODEN (UNTEN) */
+        #ground { 
+            position: absolute; top: 40%; left: 0; width: 100%; height: 60%; 
+            /* Fallback: Grüne Streifen. Wenn das Bild da ist, liegt es über den Streifen */
+            background-color: #22c55e;
+            background-image: url('hintergrund_bottom.png'), repeating-linear-gradient(to bottom, #22c55e, #22c55e 50px, #16a34a 50px, #16a34a 100px); 
+            /* WICHTIG: 100% Breite, Höhe passt sich automatisch an, Y-Achse wiederholt sich endlos */
+            background-size: 100% auto; 
+            background-repeat: repeat-y; 
+            z-index: 1; 
         }
 
-        #bg-bottom { 
-            position: absolute; top: 0; left: -50%; width: 200%; height: 200%; 
-            /* Die Wiese und der Weg (wird per CSS gezeichnet) */
-            background-color: #2b4a15; 
-            background-image: 
-                /* Die braunen Fahrspuren in der Mitte */
-                linear-gradient(to right, transparent 40%, rgba(101, 67, 33, 1) 40%, rgba(101, 67, 33, 1) 45%, transparent 45%, transparent 55%, rgba(101, 67, 33, 1) 55%, rgba(101, 67, 33, 1) 60%, transparent 60%),
-                /* Waagerechte Linien, damit man die Geschwindigkeit spürt */
-                repeating-linear-gradient(to bottom, transparent, transparent 96px, rgba(0,0,0,0.3) 96px, rgba(0,0,0,0.3) 100px);
-            
-            /* Dies kippt den geraden Weg nach hinten zum Horizont! */
-            transform-origin: top center;
-            transform: rotateX(75deg); 
-        }
-
-        #bg-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%); z-index: 2; pointer-events: none;}
-
-        #game-wrap { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 20; }
+        #hud { position: absolute; top: 10px; width: 100%; z-index: 200; padding: 0 20px; text-align: center; }
+        .title { color: #00f2ff; font-size: 24px; text-shadow: 0 0 10px #00f2ff; margin-bottom: 10px; }
         
-        #hud { position: absolute; top: 10px; width: 100%; z-index: 200; padding: 10px; pointer-events: none; }
-        #mission-title { text-align: center; font-size: 24px; font-weight: 900; color: var(--neon); text-shadow: 0 0 10px var(--neon); margin-bottom: 10px; }
-        #stats-bar { display: flex; justify-content: space-between; background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 15px; border: 1px solid var(--neon); }
-        .stat { font-weight: 900; font-size: 16px; }
+        /* DER ESEL */
+        #player {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 60px;
+            z-index: 50;
+            transition: left 0.15s ease-out; /* Weiche Seitwärtsbewegung */
+        }
 
-        canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 50; }
-
+        /* STEUERUNG */
         #controls { position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; z-index: 300; }
-        .arrow { width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%; color: #fff; font-size: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid rgba(255,255,255,0.3); }
-        .arrow:active { background: var(--neon); color: #000; transform: scale(0.9); }
-
-        .screen { position: absolute; inset: 0; z-index: 400; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;}
-        .btn-main { padding: 15px 30px; background: var(--green); border: none; border-radius: 10px; font-family: 'Orbitron'; font-weight: 900; font-size: 20px; cursor: pointer; margin-top: 20px; }
+        .arrow { width: 70px; height: 70px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; }
+        .arrow:active { background: rgba(0, 242, 255, 0.5); }
     </style>
 </head>
 <body>
 
-<div id="phone-container">
-    <div id="bg-top"></div>
-    <div id="floor-container">
-        <div id="bg-bottom"></div>
-    </div>
-    <div id="bg-overlay"></div>
+<div id="game-container">
+    
+    <div id="sky"></div>
+    <div id="ground"></div>
 
-    <div id="game-wrap" style="visibility: hidden;">
-        <div id="hud">
-            <div id="mission-title">DONKEY MISSION</div>
-            <div id="stats-bar">
-                <div class="stat" style="color:var(--neon)">LVL <span id="lvl-txt">1</span></div>
-                <div id="score-txt" class="stat" style="color:var(--gold)">0 PTS</div>
-            </div>
-        </div>
-        
-        <canvas id="canvas"></canvas>
-
-        <div id="controls">
-            <div class="arrow" onmousedown="move(-1)" ontouchstart="event.preventDefault(); move(-1)">◀</div>
-            <div class="arrow" onmousedown="move(1)" ontouchstart="event.preventDefault(); move(1)">▶</div>
-        </div>
+    <div id="hud">
+        <div class="title">DONKEY MISSION</div>
+        <div id="pts" style="color: #FFD700;">0 PTS</div>
     </div>
 
-    <div id="scr-start" class="screen">
-        <h1 style="color:var(--gold); font-size: 30px; margin-bottom: 20px;">DONKEY MISSION</h1>
-        <button class="btn-main" onclick="startGame()">SPIEL STARTEN</button>
+    <div id="player">🫏</div>
+
+    <div id="controls">
+        <div class="arrow" onmousedown="move(-1)" ontouchstart="event.preventDefault(); move(-1)">◀</div>
+        <div class="arrow" onmousedown="move(1)" ontouchstart="event.preventDefault(); move(1)">▶</div>
     </div>
+
 </div>
 
 <script>
-let active = false;
-let score = 0, level = 1;
-let lastT = 0;
-let bgScrollY = 0; 
+    // Spiel-Variablen
+    let scrollY = 0;
+    let speed = 250; // Geschwindigkeit des Bodens in Pixeln pro Sekunde
+    let lastTime = 0;
+    let score = 0;
 
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-let W = canvas.width = 420;
-let H = canvas.height = 800;
+    // Fahrspuren (Links, Mitte, Rechts in Prozent)
+    const lanes = [20, 50, 80]; 
+    let currentLane = 1;
 
-const lanes = [W*0.2, W*0.5, W*0.8]; // Links, Mitte, Rechts
-let currLane = 1, playerX = lanes[1], targetX = lanes[1];
+    function move(dir) {
+        currentLane = Math.max(0, Math.min(2, currentLane + dir));
+        document.getElementById('player').style.left = lanes[currentLane] + '%';
+    }
 
-function startGame() {
-    active = true;
-    document.getElementById("scr-start").style.display = "none";
-    document.getElementById("game-wrap").style.visibility = "visible";
+    // Die Haupt-Schleife (Game Loop)
+    function loop(time) {
+        let dt = (time - lastTime) / 1000;
+        if (!lastTime) dt = 0;
+        lastTime = time;
+        if (dt > 0.1) dt = 0.016; // Verhindert Ruckler bei Tab-Wechsel
+
+        // 1. BEWEGUNG DES BODENS
+        scrollY += speed * dt;
+        
+        // Aktualisiere die CSS background-position des Bodens
+        // Die X-Position bleibt 'center', die Y-Position wächst endlos
+        document.getElementById('ground').style.backgroundPosition = `center ${scrollY}px`;
+
+        // 2. SCORE UPDATEN
+        score += 10 * dt;
+        document.getElementById('pts').innerText = Math.floor(score) + " PTS";
+
+        requestAnimationFrame(loop);
+    }
+
+    // Spiel starten
     requestAnimationFrame(loop);
-}
-
-function move(dir) {
-    currLane = Math.max(0, Math.min(2, currLane + dir));
-    targetX = lanes[currLane];
-}
-
-function loop(t) {
-    if(!active) return;
-    let dt = (t - (lastT || t)) / 1000;
-    lastT = t;
-    if(dt > 0.1) dt = 0.016;
-
-    // --- DIE MAGIE: Der 3D Weg scrollt endlos ---
-    let speedMult = 1 + (level * 0.1);
-    
-    // Wir verschieben die Textur auf dem Boden nach unten
-    bgScrollY += (400 * speedMult) * dt; 
-    
-    // Die Position des Hintergrundbildes im 3D-Container aktualisieren
-    document.getElementById("bg-bottom").style.backgroundPosition = `0px ${bgScrollY}px`;
-
-    // Parallax Effekt für die Kurvenlage (optional)
-    let playerOffsetX = ((W / 2) - playerX);
-    document.getElementById("bg-bottom").style.transform = `rotateX(75deg) rotateZ(${playerOffsetX * 0.02}deg)`;
-
-    // Updates
-    score += 10 * dt;
-    if(score > level * 200) level++;
-    
-    document.getElementById("score-txt").innerText = Math.floor(score) + " PTS";
-    document.getElementById("lvl-txt").innerText = level;
-
-    // Esel zeichnen
-    ctx.clearRect(0, 0, W, H);
-    playerX += (targetX - playerX) * 0.15; // Weiche Seitwärtsbewegung
-    
-    ctx.font = "80px Arial";
-    ctx.textAlign = "center";
-    
-    // Eine kleine Wipp-Animation für den Esel beim Laufen
-    let bounce = Math.abs(Math.sin(t * 0.01)) * 10;
-    ctx.fillText("🫏", playerX, H - 120 - bounce);
-
-    requestAnimationFrame(loop);
-}
 </script>
+
 </body>
 </html>
