@@ -210,26 +210,14 @@
         ul.rules { padding-left: 20px; } ul.rules li { margin-bottom: 8px; }
 
         .store-badges { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 10px; width: 100%; }
-        .play-store-btn { 
-            display: block; 
-            width: 190px; 
-            height: 56px; 
-            transition: transform 0.2s ease-in-out; 
-        }
-        .play-store-btn img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; 
-            border-radius: 8px; 
-            display: block;
-        }
+        .play-store-btn { display: block; width: 190px; height: 56px; transition: transform 0.2s ease-in-out; }
+        .play-store-btn img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: block; }
         .google-btn img { transform: scale(1.15); } 
         .apple-btn img { background: #000; padding: 6px; box-sizing: border-box; } 
         
         .play-store-btn:hover { transform: scale(1.05); cursor: pointer; }
         .play-store-btn:active { transform: scale(0.95); }
 
-        /* SCROLLBARES GAME OVER POPUP */
         #scr-end { background: transparent; z-index: 1000; }
         #scr-end .screen-inner { justify-content: flex-start; padding-top: 30px; }
         
@@ -245,7 +233,6 @@
             flex-direction: column;
             align-items: center;
             box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-            /* Scrollbar machen für kleine Handys! */
             max-height: 88vh;
             overflow-y: auto;
         }
@@ -354,8 +341,8 @@
                     <li><b>Provisions:</b> Collect food for <span style="color:var(--green)">+10 to +30 PTS</span>.</li>
                     <li><b>Power-Ups:</b> <br>
                         <b>🚀 Rocket Core = <span style="color:var(--rad)">8s Radioactive Shield (☢️) & Bonus PTS!</span></b><br>
-                        <b>❤️ Heart (UFO) = <span style="color:var(--gold)">+1 ❤️ (or Bonus PTS)</span></b><br>
-                        <b>🧲 Magnet = <span style="color:var(--neon)">Pulls in food automatically!</span></b>
+                        <b>👽 Alien Core = <span style="color:var(--neon)">5s Magnet (🧲) & Bonus PTS!</span></b><br>
+                        <b>❤️ UFO Drop = <span style="color:var(--gold)">+1 ❤️ (or Bonus PTS)</span></b>
                     </li>
                     <li><b>Hazards:</b> Ninjas 🥷 (-1 ❤️) & Spiders 🕷️ (-30 PTS & drain).</li>
                     <li><b>Objective:</b> Survive 12 Levels to WIN!</li>
@@ -556,12 +543,9 @@ function initAudioContext() {
 function handleFirstTouch() {
     initAudioContext();
     if (document.getElementById("scr-start").style.display !== "none") {
-        let saved = localStorage.getItem("doggycoAgent") || "";
-        if (!saved) { 
-            if (!dogHasSpoken && videoEl) {
-                dogHasSpoken = true;
-                manageMedia('vid1');
-            }
+        if (!dogHasSpoken && videoEl) {
+            dogHasSpoken = true;
+            manageMedia('vid1');
         }
     }
 }
@@ -791,6 +775,11 @@ let globalAnimationId = null;
 
 let clouds = [], opponents = [], ufos = []; 
 
+// VARIABLEN FÜR ZUFÄLLIGE SPAWN-ZEITEN
+let tSpawnRocket = 0;
+let tSpawnMagnet = 0;
+let tSpawnUfo = 0;
+
 let invincibleTimer = 0;
 let alarmTimer = 0; 
 let rocketSpawned = false;
@@ -799,6 +788,7 @@ let magnetSpawned = false;
 let magnetTimer = 0;
 let rocket = null;
 let fallingCore = null;
+let fallingAlien = null;
 let fallingHearts = [];
 
 let score = 0, hp = 3, energy = 100, level = 1, timeLeft = 30;
@@ -865,7 +855,12 @@ function start(m, startLvl) {
     
     invincibleTimer = 0; alarmTimer = 0; magnetTimer = 0;
     rocketSpawned = false; ufoSpawned = false; magnetSpawned = false;
-    rocket = null; fallingCore = null; fallingHearts = [];
+    rocket = null; fallingCore = null; fallingAlien = null; fallingHearts = [];
+    
+    // ZUFÄLLIGE SPAWN ZEITEN (Ohne Überschneidung)
+    tSpawnRocket = 22 + Math.random() * 4; // 22 bis 26
+    tSpawnMagnet = 14 + Math.random() * 4; // 14 bis 18
+    tSpawnUfo = 6 + Math.random() * 4;     // 6 bis 10
     
     initBackgroundGraphics(); 
     updateTheme(mode);
@@ -931,8 +926,8 @@ async function saveScoreAndRefresh(newScore) {
 function showEndScreen(win) {
     document.getElementById("controls").style.display = "none";
     document.getElementById("hud").style.display = "none";
-    
-    document.getElementById("canvas").classList.add("blur");
+    document.getElementById("canvas").style.display = "none"; 
+    ctx.clearRect(0,0,W,H);
     
     document.getElementById("game-wrap").style.pointerEvents = "none";
     document.getElementById("phone-container").classList.remove("is-playing");
@@ -996,18 +991,18 @@ function loop(t) {
         if (!missionComplete) {
             timeLeft -= dt; energy -= (4 * speedMult) * dt;
 
-            if(timeLeft <= 24 && !rocketSpawned) {
+            // VARIABLE, ABER SICHERE SPAWN-ZEITEN (z.B. Rakete kommt bei 25.3s, Magnet bei 17.1s, UFO bei 8.5s)
+            if(timeLeft <= tSpawnRocket && !rocketSpawned) {
                 rocketSpawned = true; let safeL = getSafeLaneForItems(); if(safeL === -1) safeL = 2; 
-                rocket = { x: W + 50, y: 150, s: 250, laid: false, targetLane: safeL }; sfxRocket();
+                rocket = { x: W + 50, y: 150, s: 250, laid: false, targetLane: safeL, type: 'shield' }; sfxRocket();
             }
             
-            // MAGNET SPAWNT BEI 18 SEKUNDEN
-            if(timeLeft <= 18 && !magnetSpawned) {
+            if(timeLeft <= tSpawnMagnet && !magnetSpawned) {
                 magnetSpawned = true; let safeL = getSafeLaneForItems(); if(safeL === -1) safeL = 2; 
-                entities.push({ l: safeL, x: lanes[safeL], y: -50, t: '🧲', pts: 0, bad: false, s: 230 * speedMult, isMagnet: true });
+                rocket = { x: W + 50, y: 150, s: 250, laid: false, targetLane: safeL, type: 'magnet' }; sfxRocket();
             }
 
-            if(timeLeft <= 12 && !ufoSpawned) {
+            if(timeLeft <= tSpawnUfo && !ufoSpawned) {
                 ufoSpawned = true; let safeL = getSafeLaneForItems(); if(safeL === -1) safeL = 2; 
                 ufos.push({ x: W + 50, y: H / 4 + Math.random() * H / 4, s: 75 + (25 * speedMult), targetLane: safeL, dropped: false }); sfxUfo(); 
             }
@@ -1031,7 +1026,12 @@ function loop(t) {
 
                 } else {
                     level++; timeLeft = 30; energy = Math.min(100, energy + (25 * speedMult));
-                    rocketSpawned = false; ufoSpawned = false; magnetSpawned = false; rocket = null; fallingCore = null; fallingHearts = [];
+                    rocketSpawned = false; ufoSpawned = false; magnetSpawned = false; rocket = null; fallingCore = null; fallingAlien = null; fallingHearts = [];
+                    
+                    // NEUE ZUFALLSZEITEN FÜR DAS NÄCHSTE LEVEL BERECHNEN
+                    tSpawnRocket = 22 + Math.random() * 4; 
+                    tSpawnMagnet = 14 + Math.random() * 4; 
+                    tSpawnUfo = 6 + Math.random() * 4;
                     
                     const modeOrder = ['dog', 'cat', 'rabbit', 'fox', 'panda', 'unicorn'];
                     let expectedModeIndex = Math.floor((level - 1) / 2) % 6;
@@ -1069,17 +1069,23 @@ function loop(t) {
 
         if (rocket && !missionComplete) {
             rocket.x -= rocket.s * dt;
-            ctx.save(); ctx.translate(rocket.x, rocket.y + Math.sin(t/100)*5); ctx.rotate(-Math.PI / 1.5); ctx.font = "50px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText('🚀', 0, 0); ctx.restore();
+            ctx.save(); ctx.translate(rocket.x, rocket.y + Math.sin(t/100)*5); ctx.rotate(-Math.PI / 1.5); ctx.font = "50px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; 
             
-            for(let p=0; p<2; p++) {
-                fxParticles.push({
-                    x: rocket.x + 30 + Math.random()*15, y: rocket.y + Math.sin(t/100)*5 + (Math.random()-0.5)*15, 
-                    vx: 100 + Math.random()*50, vy: (Math.random()-0.5)*20, life: 0.2 + Math.random()*0.2, maxLife: 0.4, 
-                    r: 3 + Math.random()*5, c: Math.random() > 0.5 ? '#FFD700' : '#ff3131' 
-                });
+            if(rocket.type === 'shield') {
+                ctx.fillText('🚀', 0, 0); 
+                for(let p=0; p<2; p++) { fxParticles.push({ x: rocket.x + 30 + Math.random()*15, y: rocket.y + Math.sin(t/100)*5 + (Math.random()-0.5)*15, vx: 100 + Math.random()*50, vy: (Math.random()-0.5)*20, life: 0.2 + Math.random()*0.2, maxLife: 0.4, r: 3 + Math.random()*5, c: Math.random() > 0.5 ? '#FFD700' : '#ff3131' }); }
+            } else if (rocket.type === 'magnet') {
+                ctx.fillText('🛸', 0, 0); 
+                for(let p=0; p<2; p++) { fxParticles.push({ x: rocket.x + 30 + Math.random()*15, y: rocket.y + Math.sin(t/100)*5 + (Math.random()-0.5)*15, vx: 100 + Math.random()*50, vy: (Math.random()-0.5)*20, life: 0.2 + Math.random()*0.2, maxLife: 0.4, r: 3 + Math.random()*5, c: '#00f2ff' }); }
             }
             
-            if(rocket.x <= lanes[rocket.targetLane] && !rocket.laid) { rocket.laid = true; fallingCore = { x: lanes[rocket.targetLane], y: rocket.y, s: 200 * speedMult }; }
+            ctx.restore();
+            
+            if(rocket.x <= lanes[rocket.targetLane] && !rocket.laid) { 
+                rocket.laid = true; 
+                if(rocket.type === 'shield') { fallingCore = { x: lanes[rocket.targetLane], y: rocket.y, s: 200 * speedMult }; }
+                else if (rocket.type === 'magnet') { fallingAlien = { x: lanes[rocket.targetLane], y: rocket.y, s: 200 * speedMult }; }
+            }
             if(rocket.x < -100) rocket = null;
         }
 
@@ -1087,8 +1093,22 @@ function loop(t) {
             fallingCore.y += fallingCore.s * dt;
             ctx.save(); ctx.shadowColor = "#adff2f"; ctx.shadowBlur = 15; ctx.font = "40px Arial"; ctx.textAlign = "center"; ctx.fillStyle = "#adff2f"; ctx.fillText('☢️', fallingCore.x, fallingCore.y); ctx.restore();
             if (Math.abs(fallingCore.x - playerX) < 40 && fallingCore.y > hitTop && fallingCore.y < hitBottom) {
-                invincibleTimer = 8.0; charJump = 20; sfxShield(); let bonusPts = 100 + (level * 10); score += bonusPts; sfxStarCollect(); addFloat(fallingCore.x + 40, fallingCore.y, "SHIELD +" + bonusPts, "#00ff88", 25); fallingCore = null;
+                invincibleTimer = 8.0; charJump = 20; sfxShield(); 
+                let bonusPts = 100 * level; score += bonusPts; 
+                sfxStarCollect(); addFloat(fallingCore.x + 40, fallingCore.y, "SHIELD +" + bonusPts, "#00ff88", 25); 
+                fallingCore = null;
             } else if (fallingCore.y > H + 50) { fallingCore = null; }
+        }
+        
+        if (fallingAlien && !missionComplete) {
+            fallingAlien.y += fallingAlien.s * dt;
+            ctx.save(); ctx.shadowColor = "#00f2ff"; ctx.shadowBlur = 15; ctx.font = "40px Arial"; ctx.textAlign = "center"; ctx.fillStyle = "#00f2ff"; ctx.fillText('🧲', fallingAlien.x, fallingAlien.y); ctx.restore();
+            if (Math.abs(fallingAlien.x - playerX) < 40 && fallingAlien.y > hitTop && fallingAlien.y < hitBottom) {
+                magnetTimer = 5.0; charJump = 20; sfxStarCollect(); 
+                let bonusPts = 100 * level; score += bonusPts; 
+                addFloat(fallingAlien.x + 40, fallingAlien.y, "MAGNET +" + bonusPts, "#00f2ff", 25); 
+                fallingAlien = null;
+            } else if (fallingAlien.y > H + 50) { fallingAlien = null; }
         }
 
         if(!missionComplete) { if(Math.random() < 0.015 && opponents.length < 3) opponents.push({ x: W + 50, y: Math.random()*H/2 + 50, s: (100 + Math.random()*50) * speedMult }); }
@@ -1116,12 +1136,16 @@ function loop(t) {
             if(u.x < -50) ufos.splice(i, 1);
         }
 
+        // LOGIK FÜR DAS HERZ: Heilt +1 ODER gibt fette 100 * Level Punkte!
         for(let i = fallingHearts.length - 1; i >= 0; i--) {
             let s = fallingHearts[i]; if(!missionComplete) s.y += s.s * dt;
             ctx.font = "40px Arial"; ctx.textAlign = "center"; ctx.fillText('❤️', s.x, s.y);
             if(!missionComplete && Math.abs(s.x - playerX) < 40 && s.y > hitTop && s.y < hitBottom) {
-                if (hp < 3) { hp++; charJump = 15; sfxStarCollect(); addFloat(s.x + 40, s.y, "+1 ❤️", "#00ff88", 35); } 
-                else { let bonusPts = 100 + (level * 10); score += bonusPts; charJump = 15; sfxStarCollect(); addFloat(s.x + 40, s.y, "+" + bonusPts, "#00ff88", 30); }
+                if (hp < 3) { 
+                    hp++; charJump = 15; sfxStarCollect(); addFloat(s.x + 40, s.y, "+1 ❤️", "#00ff88", 35); 
+                } else { 
+                    let bonusPts = 100 * level; score += bonusPts; charJump = 15; sfxStarCollect(); addFloat(s.x + 40, s.y, "+" + bonusPts, "#00ff88", 30); 
+                }
                 fallingHearts.splice(i, 1);
             } else if (s.y > H + 50) { fallingHearts.splice(i, 1); }
         }
@@ -1169,8 +1193,7 @@ function loop(t) {
         for(let i = entities.length - 1; i >= 0; i--) {
             let e = entities[i]; 
             
-            // MAGNET LOGIK: Zieht positive Items zum Spieler
-            if (magnetTimer > 0 && !e.bad && !e.isMagnet && !missionComplete && e.y > 50) {
+            if (magnetTimer > 0 && !e.bad && !missionComplete && e.y > 50) {
                 let dx = playerX - e.x;
                 let dy = (H - 80) - e.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
@@ -1190,8 +1213,6 @@ function loop(t) {
                 if(e.bad) {
                     if (invincibleTimer > 0) { addFloat(e.x + 40, e.y, "BLOCKED!", "#00ff88", 20); } 
                     else { hp--; charShake = 20; sfxHit(); hapticDamage(); addFloat(e.x + 40, e.y, "-1 ❤️", "#ff3131", 35); }
-                } else if(e.isMagnet) {
-                    magnetTimer = 5.0; charJump = 15; sfxStarCollect(); addFloat(e.x + 40, e.y, "MAGNET!", "#00f2ff", 28);
                 } else { 
                     let pG = Math.floor(e.pts * ptsScaling); score += pG; energy = Math.min(100, energy + 5); charJump = 15; sfxCollect(); addFloat(e.x + 40, e.y, "+"+pG, "#00ff88", 28); 
                 }
