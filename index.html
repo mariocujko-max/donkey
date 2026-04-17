@@ -37,7 +37,6 @@
             user-select: none; -webkit-user-select: none; 
         }
         
-        /* Unsichtbare Scrollbalken für echtes App-Feeling */
         ::-webkit-scrollbar { display: none; }
         html, body {
             -ms-overflow-style: none;  
@@ -192,7 +191,6 @@
         .rank-gold { color: var(--gold); font-size: 18px; text-shadow: 0 0 10px var(--gold); font-weight: 900; }
         .rank-white { color: #ffffff; text-shadow: 1px 1px 3px #000; }
 
-        /* PERFEKTES 2x2 RASTER FÜR SOCIAL BUTTONS */
         .sup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; flex-shrink: 0; width: 100%; }
         .btn-sup { 
             height: 55px; 
@@ -211,30 +209,29 @@
         .text-sm { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; line-height: 1.6; color: #fff; text-shadow: 1px 1px 2px #000; }
         ul.rules { padding-left: 20px; } ul.rules li { margin-bottom: 8px; }
 
-        /* PERFEKT UNIFORME STORE BADGES (Google, Apple, Microsoft) */
         .store-badges { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 10px; width: 100%; }
         .play-store-btn { 
             display: block; 
-            width: 190px; /* Einheitliche Breite für alle */
-            height: 56px; /* Einheitliche Höhe für alle */
+            width: 190px; 
+            height: 56px; 
             transition: transform 0.2s ease-in-out; 
         }
         .play-store-btn img { 
             width: 100%; 
             height: 100%; 
-            object-fit: contain; /* Nichts wird verzerrt */
+            object-fit: contain; 
             border-radius: 8px; 
             display: block;
         }
-        /* Extra-Anpassungen für perfekte Optik */
-        .google-btn img { transform: scale(1.15); } /* Zerstört den unsichtbaren Rand im Google-Bild */
-        .apple-btn img { background: #000; padding: 6px; box-sizing: border-box; } /* Apple SVG braucht schwarzen HG */
+        .google-btn img { transform: scale(1.15); } 
+        .apple-btn img { background: #000; padding: 6px; box-sizing: border-box; } 
         
         .play-store-btn:hover { transform: scale(1.05); cursor: pointer; }
         .play-store-btn:active { transform: scale(0.95); }
 
+        /* SCROLLBARES GAME OVER POPUP */
         #scr-end { background: transparent; z-index: 1000; }
-        #scr-end .screen-inner { justify-content: center; }
+        #scr-end .screen-inner { justify-content: flex-start; padding-top: 30px; }
         
         .end-popup-box {
             background: rgba(20, 20, 20, 0.7);
@@ -248,6 +245,9 @@
             flex-direction: column;
             align-items: center;
             box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            /* Scrollbar machen für kleine Handys! */
+            max-height: 88vh;
+            overflow-y: auto;
         }
         
         .btn-restart-green {
@@ -264,6 +264,7 @@
             box-shadow: 0 6px 0 #00b362, 0 10px 20px rgba(0,255,136,0.3);
             transition: 0.1s;
             margin-top: 15px;
+            margin-bottom: 20px;
         }
         .btn-restart-green:active {
             transform: translateY(6px);
@@ -353,7 +354,8 @@
                     <li><b>Provisions:</b> Collect food for <span style="color:var(--green)">+10 to +30 PTS</span>.</li>
                     <li><b>Power-Ups:</b> <br>
                         <b>🚀 Rocket Core = <span style="color:var(--rad)">8s Radioactive Shield (☢️) & Bonus PTS!</span></b><br>
-                        <b>❤️ Heart (UFO) = <span style="color:var(--gold)">+1 ❤️ (or Bonus PTS)</span></b>
+                        <b>❤️ Heart (UFO) = <span style="color:var(--gold)">+1 ❤️ (or Bonus PTS)</span></b><br>
+                        <b>🧲 Magnet = <span style="color:var(--neon)">Pulls in food automatically!</span></b>
                     </li>
                     <li><b>Hazards:</b> Ninjas 🥷 (-1 ❤️) & Spiders 🕷️ (-30 PTS & drain).</li>
                     <li><b>Objective:</b> Survive 12 Levels to WIN!</li>
@@ -424,16 +426,16 @@
             <div class="end-popup-box">
                 <h1 id="end-agent-name" style="font-family: 'Orbitron'; font-size: 36px; margin: 0 0 15px 0; line-height: 1; word-break: break-all; text-align: center; text-transform: uppercase;">PLAYER</h1>
                 
-                <div style="margin-bottom: 10px;">
-                    <img src="sign.png" alt="Good Boy" style="width: 160px; display: block; margin: 0 auto 5px auto;">
-                    <img src="dog.png" alt="Dog Avatar" style="width: 130px; display: block; margin: 0 auto;">
+                <div class="dog-video-wrapper" style="margin-bottom: 10px;">
+                    <canvas id="dog-video-canvas2" width="220" height="220" class="dog-video-canvas"></canvas>
+                    <video id="dog-video2" src="dog.video2.mp4" playsinline webkit-playsinline preload="auto" muted crossorigin="anonymous" style="display:none;"></video>
                 </div>
 
                 <h1 id="f-score" style="font-family: 'Orbitron'; font-size: 42px; margin: 10px 0 20px 0; line-height: 1; text-align: center; color: var(--gold); text-shadow: 0 0 15px var(--gold);">0 PTS</h1> 
                 
                 <button class="btn-restart-green" onclick="goToLevelSelect()">LEVEL AUSWAHL</button> 
                 
-                <div style="margin-top: 25px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; width: 100%;">
+                <div style="margin-top: 15px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; width: 100%;">
                     <p class="text-sm" style="margin-bottom: 15px; color: #aaa;">Download the full version:</p>
                     <div class="store-badges">
                         <a href="https://play.google.com/store/apps/details?id=com.doggycogames.doggyco" target="_blank" class="play-store-btn google-btn" rel="noopener noreferrer">
@@ -460,12 +462,16 @@
 function manageMedia(action) {
     let bgMusic = document.getElementById("snd-action");
     let vid1 = document.getElementById("dog-video");
+    let vid2 = document.getElementById("dog-video2");
 
     if(bgMusic) { bgMusic.pause(); bgMusic.currentTime = 0; }
     if(vid1) { vid1.pause(); }
+    if(vid2) { vid2.pause(); }
 
     if(action === 'vid1') {
         if(vid1) { vid1.currentTime = 0; vid1.muted = false; vid1.play().catch(e=>{}); processVideoFrame(); }
+    } else if(action === 'vid2') {
+        if(vid2) { vid2.currentTime = 0; vid2.muted = false; vid2.play().catch(e=>{}); processVideoFrame2(); }
     } else if(action === 'game') {
         if(bgMusic) { bgMusic.volume = 0.15; bgMusic.playbackRate = 1.0; bgMusic.play().catch(e=>{}); }
     } else if(action === 'none') {
@@ -476,6 +482,11 @@ let videoEl = document.getElementById('dog-video');
 let videoCanvas = document.getElementById('dog-video-canvas');
 let videoCtx = videoCanvas.getContext('2d', { willReadFrequently: true });
 let videoAnimationId = null;
+
+let videoEl2 = document.getElementById('dog-video2');
+let videoCanvas2 = document.getElementById('dog-video-canvas2');
+let videoCtx2 = videoCanvas2.getContext('2d', { willReadFrequently: true });
+let videoAnimationId2 = null;
 
 function processGreenScreen(vEl, vCanvas, vCtx) {
     if (!vEl.videoWidth) return;
@@ -502,6 +513,13 @@ function processVideoFrame() {
     }
 }
 
+function processVideoFrame2() {
+    if (!videoEl2.paused && !videoEl2.ended) {
+        processGreenScreen(videoEl2, videoCanvas2, videoCtx2);
+        videoAnimationId2 = requestAnimationFrame(processVideoFrame2);
+    }
+}
+
 function resetVideoToStart(vEl, vCanvas, vCtx) {
     vEl.pause();
     vEl.currentTime = 0;
@@ -512,6 +530,11 @@ videoEl.addEventListener('loadeddata', () => processGreenScreen(videoEl, videoCa
 videoEl.addEventListener('seeked', () => processGreenScreen(videoEl, videoCanvas, videoCtx));
 videoEl.addEventListener('play', processVideoFrame);
 videoEl.addEventListener('ended', () => resetVideoToStart(videoEl, videoCanvas, videoCtx));
+
+videoEl2.addEventListener('loadeddata', () => processGreenScreen(videoEl2, videoCanvas2, videoCtx2));
+videoEl2.addEventListener('seeked', () => processGreenScreen(videoEl2, videoCanvas2, videoCtx2));
+videoEl2.addEventListener('play', processVideoFrame2);
+videoEl2.addEventListener('ended', () => resetVideoToStart(videoEl2, videoCanvas2, videoCtx2));
 
 let systemActive = false;
 let dogHasSpoken = false;
@@ -772,6 +795,8 @@ let invincibleTimer = 0;
 let alarmTimer = 0; 
 let rocketSpawned = false;
 let ufoSpawned = false;
+let magnetSpawned = false;
+let magnetTimer = 0;
 let rocket = null;
 let fallingCore = null;
 let fallingHearts = [];
@@ -821,6 +846,15 @@ function start(m, startLvl) {
 
     if(globalAnimationId) cancelAnimationFrame(globalAnimationId);
     
+    let v2 = document.getElementById('dog-video2');
+    if (v2) {
+        v2.muted = false; 
+        let p = v2.play();
+        if(p !== undefined) {
+            p.then(() => { v2.pause(); v2.currentTime = 0; }).catch(e => {});
+        }
+    }
+    
     manageMedia('game');
 
     mode = m;
@@ -829,8 +863,8 @@ function start(m, startLvl) {
     hp = 3; energy = 100; score = 0; timeLeft = 30;
     entities = []; floaters = []; fireworks = []; fxParticles = []; missionComplete = false;
     
-    invincibleTimer = 0; alarmTimer = 0;
-    rocketSpawned = false; ufoSpawned = false;
+    invincibleTimer = 0; alarmTimer = 0; magnetTimer = 0;
+    rocketSpawned = false; ufoSpawned = false; magnetSpawned = false;
     rocket = null; fallingCore = null; fallingHearts = [];
     
     initBackgroundGraphics(); 
@@ -846,7 +880,6 @@ function start(m, startLvl) {
     }
     
     document.getElementById("canvas").classList.remove("blur");
-    
     document.getElementById("phone-container").classList.add("is-playing");
     
     permSpiders = [ { lane: 0, y: 60, dy: 1, hit: false }, { lane: 4, y: H-120, dy: -1, hit: false } ];
@@ -919,6 +952,7 @@ function showEndScreen(win) {
         el.style.textShadow = `0 0 15px ${color}, 0 0 30px ${color}`;
     });
 
+    manageMedia('vid2'); 
     try { saveScoreAndRefresh(Math.floor(score)); } catch(e) {}
 }
 
@@ -956,6 +990,8 @@ function loop(t) {
             if (alarmTimer <= 0) { sfxAlarm(); alarmTimer = 0.8; }
             if(invincibleTimer < 0) invincibleTimer = 0;
         }
+        
+        if (magnetTimer > 0) magnetTimer -= dt;
 
         if (!missionComplete) {
             timeLeft -= dt; energy -= (4 * speedMult) * dt;
@@ -963,6 +999,12 @@ function loop(t) {
             if(timeLeft <= 24 && !rocketSpawned) {
                 rocketSpawned = true; let safeL = getSafeLaneForItems(); if(safeL === -1) safeL = 2; 
                 rocket = { x: W + 50, y: 150, s: 250, laid: false, targetLane: safeL }; sfxRocket();
+            }
+            
+            // MAGNET SPAWNT BEI 18 SEKUNDEN
+            if(timeLeft <= 18 && !magnetSpawned) {
+                magnetSpawned = true; let safeL = getSafeLaneForItems(); if(safeL === -1) safeL = 2; 
+                entities.push({ l: safeL, x: lanes[safeL], y: -50, t: '🧲', pts: 0, bad: false, s: 230 * speedMult, isMagnet: true });
             }
 
             if(timeLeft <= 12 && !ufoSpawned) {
@@ -989,7 +1031,7 @@ function loop(t) {
 
                 } else {
                     level++; timeLeft = 30; energy = Math.min(100, energy + (25 * speedMult));
-                    rocketSpawned = false; ufoSpawned = false; rocket = null; fallingCore = null; fallingHearts = [];
+                    rocketSpawned = false; ufoSpawned = false; magnetSpawned = false; rocket = null; fallingCore = null; fallingHearts = [];
                     
                     const modeOrder = ['dog', 'cat', 'rabbit', 'fox', 'panda', 'unicorn'];
                     let expectedModeIndex = Math.floor((level - 1) / 2) % 6;
@@ -1125,14 +1167,34 @@ function loop(t) {
         });
 
         for(let i = entities.length - 1; i >= 0; i--) {
-            let e = entities[i]; if(!missionComplete) e.y += e.s * dt;
+            let e = entities[i]; 
+            
+            // MAGNET LOGIK: Zieht positive Items zum Spieler
+            if (magnetTimer > 0 && !e.bad && !e.isMagnet && !missionComplete && e.y > 50) {
+                let dx = playerX - e.x;
+                let dy = (H - 80) - e.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 350) { 
+                    e.x += (dx / dist) * 400 * dt; 
+                    e.y += (dy / dist) * 400 * dt; 
+                } else {
+                    e.y += e.s * dt; 
+                }
+            } else {
+                if(!missionComplete) e.y += e.s * dt;
+            }
+            
             ctx.font = "45px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(e.t, e.x, e.y);
 
             if(!missionComplete && Math.abs(e.x - playerX) < 40 && e.y > hitTop && e.y < hitBottom) {
                 if(e.bad) {
                     if (invincibleTimer > 0) { addFloat(e.x + 40, e.y, "BLOCKED!", "#00ff88", 20); } 
                     else { hp--; charShake = 20; sfxHit(); hapticDamage(); addFloat(e.x + 40, e.y, "-1 ❤️", "#ff3131", 35); }
-                } else { let pG = Math.floor(e.pts * ptsScaling); score += pG; energy = Math.min(100, energy + 5); charJump = 15; sfxCollect(); addFloat(e.x + 40, e.y, "+"+pG, "#00ff88", 28); }
+                } else if(e.isMagnet) {
+                    magnetTimer = 5.0; charJump = 15; sfxStarCollect(); addFloat(e.x + 40, e.y, "MAGNET!", "#00f2ff", 28);
+                } else { 
+                    let pG = Math.floor(e.pts * ptsScaling); score += pG; energy = Math.min(100, energy + 5); charJump = 15; sfxCollect(); addFloat(e.x + 40, e.y, "+"+pG, "#00ff88", 28); 
+                }
                 entities.splice(i, 1);
             } else if (e.y > H + 60) { entities.splice(i, 1); }
         }
@@ -1142,6 +1204,11 @@ function loop(t) {
         if (charShake > 0) { drawX += Math.sin(charShake * 0.8) * 12; charShake--; }
         if (charJump > 0) { drawY -= Math.sin(charJump * 0.2) * 10; charJump--; }
         
+        if (magnetTimer > 0) {
+            ctx.save(); ctx.beginPath(); ctx.arc(drawX, drawY, 45 + Math.sin(t/100)*5, 0, Math.PI*2);
+            ctx.strokeStyle = "rgba(0, 242, 255, 0.6)"; ctx.lineWidth = 4; ctx.shadowColor = "#00f2ff"; ctx.shadowBlur = 15; ctx.stroke(); ctx.restore();
+        }
+
         if (invincibleTimer > 0) {
             ctx.save(); ctx.font = "50px Arial"; ctx.textAlign = "center";
             let shieldAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t / 150)); ctx.fillStyle = `rgba(173, 255, 47, ${shieldAlpha})`; 
