@@ -340,9 +340,10 @@
                     <li><b>Environments:</b> Scenery adapts every 2 levels.</li>
                     <li><b>Provisions:</b> Collect food for <span style="color:var(--green)">+10 to +30 PTS</span>.</li>
                     <li><b>Power-Ups:</b> <br>
-                        <b>🚀 Rocket Core = <span style="color:var(--rad)">8s Radioactive Shield (☢️) & Bonus PTS!</span></b><br>
-                        <b>👽 Alien Core = <span style="color:var(--neon)">5s Magnet (🧲) & Bonus PTS!</span></b><br>
-                        <b>❤️ UFO Drop = <span style="color:var(--gold)">+1 ❤️ (or Bonus PTS)</span></b>
+                        <b>🚀 Rocket Core = <span style="color:var(--rad)">8s Radioactive Shield (☢️)</span></b><br>
+                        <b>👽 Alien Core = <span style="color:var(--neon)">5s Magnet (🧲)</span></b><br>
+                        <b>❤️ UFO Drop = <span style="color:var(--gold)">+1 ❤️</span></b><br>
+                        <i>(If HP full, Catching Drops = +100 PTS x Level)</i>
                     </li>
                     <li><b>Hazards:</b> Ninjas 🥷 (-1 ❤️) & Spiders 🕷️ (-30 PTS & drain).</li>
                     <li><b>Objective:</b> Survive 12 Levels to WIN!</li>
@@ -390,7 +391,7 @@
                     <a href="https://www.apple.com/app-store/" target="_blank" class="play-store-btn apple-btn" rel="noopener noreferrer">
                         <img alt="Download on the App Store" src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" />
                     </a>
-                    <a href="https://apps.microsoft.com/" target="_blank" class="play-store-btn ms-btn" rel="noopener noreferrer">
+                    <a href="https://apps.microsoft.com/detail/9ncrxpddd1rp?hl=de-DE&gl=DE" target="_blank" class="play-store-btn ms-btn" rel="noopener noreferrer">
                         <img alt="Get it from Microsoft" src="https://get.microsoft.com/images/en-us%20dark.svg" />
                     </a>
                 </div>
@@ -431,7 +432,7 @@
                         <a href="https://www.apple.com/app-store/" target="_blank" class="play-store-btn apple-btn" rel="noopener noreferrer">
                             <img alt="Download on the App Store" src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" />
                         </a>
-                        <a href="https://apps.microsoft.com/" target="_blank" class="play-store-btn ms-btn" rel="noopener noreferrer">
+                        <a href="https://apps.microsoft.com/detail/9ncrxpddd1rp?hl=de-DE&gl=DE" target="_blank" class="play-store-btn ms-btn" rel="noopener noreferrer">
                             <img alt="Get it from Microsoft" src="https://get.microsoft.com/images/en-us%20dark.svg" />
                         </a>
                     </div>
@@ -775,7 +776,6 @@ let globalAnimationId = null;
 
 let clouds = [], opponents = [], ufos = []; 
 
-// VARIABLEN FÜR ZUFÄLLIGE SPAWN-ZEITEN
 let tSpawnRocket = 0;
 let tSpawnMagnet = 0;
 let tSpawnUfo = 0;
@@ -857,10 +857,10 @@ function start(m, startLvl) {
     rocketSpawned = false; ufoSpawned = false; magnetSpawned = false;
     rocket = null; fallingCore = null; fallingAlien = null; fallingHearts = [];
     
-    // ZUFÄLLIGE SPAWN ZEITEN (Ohne Überschneidung)
-    tSpawnRocket = 22 + Math.random() * 4; // 22 bis 26
-    tSpawnMagnet = 14 + Math.random() * 4; // 14 bis 18
-    tSpawnUfo = 6 + Math.random() * 4;     // 6 bis 10
+    // ZUFALLSZEITEN FÜR LEVEL 1 
+    tSpawnRocket = 22 + Math.random() * 4; 
+    tSpawnMagnet = 14 + Math.random() * 4; 
+    tSpawnUfo = 6 + Math.random() * 4;     
     
     initBackgroundGraphics(); 
     updateTheme(mode);
@@ -926,8 +926,8 @@ async function saveScoreAndRefresh(newScore) {
 function showEndScreen(win) {
     document.getElementById("controls").style.display = "none";
     document.getElementById("hud").style.display = "none";
-    document.getElementById("canvas").style.display = "none"; 
-    ctx.clearRect(0,0,W,H);
+    
+    document.getElementById("canvas").classList.add("blur");
     
     document.getElementById("game-wrap").style.pointerEvents = "none";
     document.getElementById("phone-container").classList.remove("is-playing");
@@ -991,17 +991,19 @@ function loop(t) {
         if (!missionComplete) {
             timeLeft -= dt; energy -= (4 * speedMult) * dt;
 
-            // VARIABLE, ABER SICHERE SPAWN-ZEITEN (z.B. Rakete kommt bei 25.3s, Magnet bei 17.1s, UFO bei 8.5s)
+            // RAKETE
             if(timeLeft <= tSpawnRocket && !rocketSpawned) {
                 rocketSpawned = true; let safeL = getSafeLaneForItems(); if(safeL === -1) safeL = 2; 
                 rocket = { x: W + 50, y: 150, s: 250, laid: false, targetLane: safeL, type: 'shield' }; sfxRocket();
             }
             
+            // ALIEN 
             if(timeLeft <= tSpawnMagnet && !magnetSpawned) {
                 magnetSpawned = true; let safeL = getSafeLaneForItems(); if(safeL === -1) safeL = 2; 
                 rocket = { x: W + 50, y: 150, s: 250, laid: false, targetLane: safeL, type: 'magnet' }; sfxRocket();
             }
 
+            // UFO
             if(timeLeft <= tSpawnUfo && !ufoSpawned) {
                 ufoSpawned = true; let safeL = getSafeLaneForItems(); if(safeL === -1) safeL = 2; 
                 ufos.push({ x: W + 50, y: H / 4 + Math.random() * H / 4, s: 75 + (25 * speedMult), targetLane: safeL, dropped: false }); sfxUfo(); 
@@ -1067,6 +1069,7 @@ function loop(t) {
             ctx.font = c.s + "px Arial"; ctx.textAlign = "center"; ctx.fillText('☁️', c.x, c.y);
         }); ctx.globalAlpha = 1.0; 
 
+        // VORBEIFLIEGEN: Rakete oder Alien
         if (rocket && !missionComplete) {
             rocket.x -= rocket.s * dt;
             ctx.save(); ctx.translate(rocket.x, rocket.y + Math.sin(t/100)*5); ctx.rotate(-Math.PI / 1.5); ctx.font = "50px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; 
@@ -1075,7 +1078,7 @@ function loop(t) {
                 ctx.fillText('🚀', 0, 0); 
                 for(let p=0; p<2; p++) { fxParticles.push({ x: rocket.x + 30 + Math.random()*15, y: rocket.y + Math.sin(t/100)*5 + (Math.random()-0.5)*15, vx: 100 + Math.random()*50, vy: (Math.random()-0.5)*20, life: 0.2 + Math.random()*0.2, maxLife: 0.4, r: 3 + Math.random()*5, c: Math.random() > 0.5 ? '#FFD700' : '#ff3131' }); }
             } else if (rocket.type === 'magnet') {
-                ctx.fillText('🛸', 0, 0); 
+                ctx.fillText('👽', 0, 0);  // Das ALIEN wirft den Magneten
                 for(let p=0; p<2; p++) { fxParticles.push({ x: rocket.x + 30 + Math.random()*15, y: rocket.y + Math.sin(t/100)*5 + (Math.random()-0.5)*15, vx: 100 + Math.random()*50, vy: (Math.random()-0.5)*20, life: 0.2 + Math.random()*0.2, maxLife: 0.4, r: 3 + Math.random()*5, c: '#00f2ff' }); }
             }
             
@@ -1089,6 +1092,7 @@ function loop(t) {
             if(rocket.x < -100) rocket = null;
         }
 
+        // FALLEN: SCHILD
         if (fallingCore && !missionComplete) {
             fallingCore.y += fallingCore.s * dt;
             ctx.save(); ctx.shadowColor = "#adff2f"; ctx.shadowBlur = 15; ctx.font = "40px Arial"; ctx.textAlign = "center"; ctx.fillStyle = "#adff2f"; ctx.fillText('☢️', fallingCore.x, fallingCore.y); ctx.restore();
@@ -1100,6 +1104,7 @@ function loop(t) {
             } else if (fallingCore.y > H + 50) { fallingCore = null; }
         }
         
+        // FALLEN: MAGNET
         if (fallingAlien && !missionComplete) {
             fallingAlien.y += fallingAlien.s * dt;
             ctx.save(); ctx.shadowColor = "#00f2ff"; ctx.shadowBlur = 15; ctx.font = "40px Arial"; ctx.textAlign = "center"; ctx.fillStyle = "#00f2ff"; ctx.fillText('🧲', fallingAlien.x, fallingAlien.y); ctx.restore();
@@ -1118,6 +1123,7 @@ function loop(t) {
             if(o.x < -50) opponents.splice(i, 1);
         });
 
+        // UFO FÜR DAS HERZ
         for(let i = ufos.length - 1; i >= 0; i--) {
             let u = ufos[i]; if(!missionComplete) u.x -= u.s * dt;
             let ufoY = u.y + Math.sin(t / 150) * 10;
@@ -1136,7 +1142,7 @@ function loop(t) {
             if(u.x < -50) ufos.splice(i, 1);
         }
 
-        // LOGIK FÜR DAS HERZ: Heilt +1 ODER gibt fette 100 * Level Punkte!
+        // FALLEN: HERZ (+1 HP ODER Bonus Punkte)
         for(let i = fallingHearts.length - 1; i >= 0; i--) {
             let s = fallingHearts[i]; if(!missionComplete) s.y += s.s * dt;
             ctx.font = "40px Arial"; ctx.textAlign = "center"; ctx.fillText('❤️', s.x, s.y);
